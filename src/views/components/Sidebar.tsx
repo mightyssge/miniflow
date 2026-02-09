@@ -7,7 +7,7 @@ export function Sidebar({ handlers }: any) {
   return (
     <div className={styles.sidebar}>
       <button className={styles.btn} onClick={() => navigate("/workflows")}>
-        ← Back to Workflows
+        ← Volver a Workflows
       </button>
 
       <div className={styles.sectionTitle}>Nodos</div>

@@ -1,5 +1,5 @@
 import ReactFlow, { Background, BackgroundVariant, MarkerType } from "reactflow";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import "reactflow/dist/style.css";
 
 import { nodeTypes } from "../components/nodes/nodeTypes";
@@ -10,7 +10,8 @@ import { NodeConfigPanel } from "../components/NodeConfigPanel";
 import styles from "./WorkflowEditor.module.css";
 
 export default function WorkflowEditor() {
-    const { state, handlers, refs } = useWorkflowViewModel();
+    const { id } = useParams<{ id: string }>();
+    const { state, handlers, refs } = useWorkflowViewModel(id);
 
     return (
         <div className={styles.app}>

@@ -47,4 +47,6 @@ export interface Workflow {
   description: string
   nodes: FlowNode[]
   edges: FlowEdge[]
+  lastRunAt?: string
+  validationStatus?: 'valid' | 'invalid' | 'pending'
 }

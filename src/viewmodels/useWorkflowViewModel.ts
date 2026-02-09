@@ -6,8 +6,16 @@ import { useWorkflowStorage } from "./useWorkflowStorage";
 import { useWorkflowIO } from "./useWorkflowIO";
 import type { FlowNode, Workflow, NodeType } from "../models/workflow/types";
 
-export function useWorkflowViewModel() {
+export function useWorkflowViewModel(initialId?: string) {
   const { workflows, currentId, setCurrentId, persist, remove } = useWorkflowStorage();
+
+  // Sync the URL :id param to the storage's currentId
+  useEffect(() => {
+    if (initialId && initialId !== currentId) {
+      setCurrentId(initialId);
+    }
+  }, [initialId]);
+
   const current = useMemo(() => workflows.find(w => w.id === currentId) ?? null, [workflows, currentId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(current?.nodes ?? []);
@@ -131,27 +139,27 @@ export function useWorkflowViewModel() {
   return {
     state: { workflows, currentId, nodes, edges, name, description, errors, hasValidated, selectedNode, runStatus, runStdout, runStderr, runExitCode },
     refs: { fileInputRef },
-    handlers: { 
-        ...actions, 
-        setName, 
-        setDescription, 
-        setCurrentId, 
-        onNodesChange, 
-        onEdgesChange, 
-        onNodeClick: (_: any, node: any) => setSelectedNodeId(node.id),
-        createNewWorkflow: () => persist(emptyWorkflow()),
-        createWorkflow1: () => persist(seedWorkflow1()),        exportJson: () => {
-          const data = getCurrentWorkflowData();
-          persist(data);
-          exportJson(data);
-        },
-        exportJava: () => {
-          const data = getCurrentWorkflowData();
-          persist(data);
-          exportJava(data);
-        },
-        onImportFile, 
-        openImport
+    handlers: {
+      ...actions,
+      setName,
+      setDescription,
+      setCurrentId,
+      onNodesChange,
+      onEdgesChange,
+      onNodeClick: (_: any, node: any) => setSelectedNodeId(node.id),
+      createNewWorkflow: () => persist(emptyWorkflow()),
+      createWorkflow1: () => persist(seedWorkflow1()), exportJson: () => {
+        const data = getCurrentWorkflowData();
+        persist(data);
+        exportJson(data);
+      },
+      exportJava: () => {
+        const data = getCurrentWorkflowData();
+        persist(data);
+        exportJava(data);
+      },
+      onImportFile,
+      openImport
     }
   };
 }
