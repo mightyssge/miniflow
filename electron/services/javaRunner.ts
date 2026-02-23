@@ -1,41 +1,22 @@
 import { spawn } from "child_process";
+import path from "path";
+import { app } from "electron";
 
-/**
- * Ejecuta el motor Java pasando un argumento (name).
- * 
- * - Lanza el JAR como proceso hijo.
- * - Captura la salida estándar (stdout).
- * - Devuelve el resultado cuando el proceso termina.
- */
 export function runJavaTest(name: string): Promise<string> {
-
   return new Promise((resolve, reject) => {
-
-    // Ejecuta: java -jar engine.jar <name>
-    const process = spawn("java", ["-jar", "engine.jar", name]);
+    // Ruta absoluta a la carpeta del motor
+    const engineDir = path.join(app.getAppPath(), "dist-java-engine");
+    
+    // Ejecuta: java -jar engine.jar <name> dentro de esa carpeta
+    const process = spawn("java", ["-jar", "engine.jar", name], {
+      cwd: engineDir
+    });
 
     let output = "";
+    process.stdout.on("data", (data) => { output += data.toString(); });
+    process.stderr.on("data", (data) => { console.error("Java error:", data.toString()); });
 
-    // Acumula la salida estándar del proceso Java
-    process.stdout.on("data", (data) => {
-      output += data.toString();
-    });
-
-    // Muestra errores en consola (stderr)
-    process.stderr.on("data", (data) => {
-      console.error("Java error:", data.toString());
-    });
-
-    // Cuando el proceso finaliza, resolvemos la promesa con la salida
-    process.on("close", () => {
-      resolve(output);
-    });
-
-    // Si ocurre un error al iniciar el proceso
-    process.on("error", (err) => {
-      reject(err);
-    });
-
+    process.on("close", () => resolve(output));
+    process.on("error", (err) => reject(err));
   });
-
 }

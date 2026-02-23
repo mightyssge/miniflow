@@ -1,224 +1,66 @@
 package com.miniflow.strategies;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miniflow.context.ExecutionContext;
 import com.miniflow.model.Node;
-
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
+import com.miniflow.utils.*;
 import java.net.http.HttpResponse;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class HttpRequestStrategy implements NodeExecutor {
-    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public void execute(Node node, ExecutionContext context) throws Exception {
-        Map<String, Object> config = extractConfig(node);
+        Map<String, Object> cfg = node.getConfig();
+        
+        // 1. Resolver parámetros con Template Engine
+        String method = TypeConverter.asString(cfg.getOrDefault("method", "GET"));
+        List<String> urls = resolveUrls(cfg, context);
+        String body = TemplateEngine.render(TypeConverter.asString(cfg.get("body")), context);
+        Map<String, String> headers = renderHeaders(cfg, context);
 
-        String method = asString(config.getOrDefault("method", "GET"));
-        String url = asString(config.get("url"));
-        Object fallbackObj = config.get("fallbackUrls");
-        Integer timeoutMs = asInt(config.getOrDefault("timeoutMs", 5000));
-        Integer retries = asInt(config.getOrDefault("retries", 0));
-        Object headersObj = config.get("headers");
-        Object bodyObj = config.get("body");
-        Object mappingObj = config.get("outputMapping");
-        if (mappingObj == null) mappingObj = config.get("map");
+        // 2. Ejecutar vía Helper
+        HttpResponse<String> resp = HttpHelper.executeWithRetries(
+            urls, method, body, headers, 
+            TypeConverter.asInt(cfg.get("timeoutMs"), 5000), 
+            TypeConverter.asInt(cfg.get("retries"), 0)
+        );
 
-        if (url == null || url.isBlank()) throw new Exception("Missing url in node config");
-
-        List<String> urls = new ArrayList<>();
-        urls.add(url);
-        if (fallbackObj instanceof List<?> list) {
-            for (Object u : list) {
-                if (u == null) continue;
-                String s = String.valueOf(u);
-                if (!s.isBlank()) urls.add(s);
-            }
-        }
-
-        HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(timeoutMs)).build();
-
-        Exception last = null;
-
-        for (String currentUrl : urls) {
-            int attempts = 0;
-            while (attempts <= retries) {
-                attempts++;
-                try {
-                    HttpRequest.Builder b = HttpRequest.newBuilder()
-                        .uri(URI.create(currentUrl))
-                        .timeout(Duration.ofMillis(timeoutMs));
-
-                    if (headersObj instanceof Map<?, ?> hm) {
-                        for (Map.Entry<?, ?> e : hm.entrySet()) {
-                            if (e.getKey() != null && e.getValue() != null) {
-                                b.header(String.valueOf(e.getKey()), String.valueOf(e.getValue()));
-                            }
-                        }
-                    }
-
-                    if ("POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method)) {
-                        String body = bodyObj == null ? "" : String.valueOf(bodyObj);
-                        b.method(method.toUpperCase(), HttpRequest.BodyPublishers.ofString(body));
-                    } else {
-                        b.method(method.toUpperCase(), HttpRequest.BodyPublishers.noBody());
-                    }
-
-                    HttpResponse<String> resp = client.send(b.build(), HttpResponse.BodyHandlers.ofString());
-                    int httpStatus = resp.statusCode();
-                    String body = resp.body();
-
-                    context.setVariable("httpStatus", httpStatus);
-                    context.setVariable("status", httpStatus);
-                    context.setVariable("httpBody", body);
-
-                    if (mappingObj instanceof Map<?, ?> mm) {
-                        for (Map.Entry<?, ?> e : mm.entrySet()) {
-                            if (e.getKey() == null || e.getValue() == null) continue;
-                            String key = String.valueOf(e.getKey());
-                            String path = String.valueOf(e.getValue());
-                            Object value = resolveMapping(path, httpStatus, body);
-                            context.setVariable(key, value);
-                        }
-                    }
-
-                    if (isHttpError(httpStatus) && isStopOnFail(config)) {
-                        throw new Exception("HTTP " + httpStatus + " en " + currentUrl);
-                    }
-
-                    return;
-                } catch (Exception ex) {
-                    last = ex;
-                }
-            }
-        }
-
-        throw last == null ? new Exception("HTTP request failed") : last;
+        // 3. Procesar y guardar (Limpieza de contexto)
+        processOutput(node.getId(), resp, cfg, context);
     }
 
-    private Object resolveMapping(String path, int httpStatus, String body) {
-        if (path == null || path.isBlank()) return null;
-        if ("$.body".equals(path)) return body;
+    private void processOutput(String nodeId, HttpResponse<String> resp, Map<String, Object> cfg, ExecutionContext ctx) throws Exception {
+        int status = resp.statusCode();
+        Object parsedBody = JsonUtils.tryParse(resp.body());
 
-        Object parsed = tryParseJson(body);
+        // Snapshot técnico aislado
+        ctx.setNodeOutput(nodeId, Map.of("status_code", status, "response", parsedBody));
 
-        if ("$.status".equals(path)) {
-            Object statusFromBody = extractFromParsed(parsed, "status");
-            if (statusFromBody != null) return normalizeValue(statusFromBody);
-            return httpStatus;
+        // Mapeo inteligente (Cero contaminación)
+        Map<String, Object> mapping = (Map<String, Object>) cfg.getOrDefault("map", cfg.get("outputMapping"));
+        if (mapping != null && !mapping.isEmpty()) {
+            mapping.forEach((k, v) -> ctx.setVariable(k, TypeConverter.normalize(JsonUtils.extractByPath(parsedBody, (String)v))));
+        } else {
+            ctx.setVariable("lastResponse", Map.of("status_code", status, "response", parsedBody));
         }
 
-        if ("$.data".equals(path)) {
-            Object v = extractFromParsed(parsed, "data");
-            if (v == null) v = extractFromParsed(parsed, "payload");
-            return normalizeValue(v);
-        }
-
-        if ("$.payload".equals(path)) {
-            Object v = extractFromParsed(parsed, "payload");
-            if (v == null) v = extractFromParsed(parsed, "data");
-            return normalizeValue(v);
-        }
-
-        if (path.startsWith("$.") && parsed != null) {
-            Object v = extractFromParsed(parsed, path.substring(2));
-            return normalizeValue(v);
-        }
-
-        return null;
-    }
-
-    private Object tryParseJson(String body) {
-        try {
-            if (body == null || body.isBlank()) return null;
-            return mapper.readValue(body, Object.class);
-        } catch (Exception ignored) {
-            return null;
+        if (HttpHelper.isError(status) && "STOP".equalsIgnoreCase(TypeConverter.asString(cfg.get("errorPolicy")))) {
+            throw new Exception("HTTP Error " + status);
         }
     }
 
-    private Object extractFromParsed(Object parsed, String dottedPath) {
-        if (parsed == null || dottedPath == null || dottedPath.isBlank()) return null;
+    private List<String> resolveUrls(Map<String, Object> cfg, ExecutionContext ctx) {
+        List<String> raw = new ArrayList<>();
+        Optional.ofNullable(cfg.get("url")).map(String::valueOf).ifPresent(raw::add);
+        if (cfg.get("fallbackUrls") instanceof List<?> list) list.forEach(u -> raw.add(String.valueOf(u)));
+        return raw.stream().map(u -> TemplateEngine.render(u, ctx)).toList();
+    }
 
-        String[] parts = dottedPath.split("\\.");
-        Object cur = parsed;
-
-        for (String p : parts) {
-            if (cur instanceof Map<?, ?> m) {
-                cur = m.get(p);
-            } else {
-                return null;
-            }
+    private Map<String, String> renderHeaders(Map<String, Object> cfg, ExecutionContext ctx) {
+        Map<String, String> rendered = new HashMap<>();
+        if (cfg.get("headers") instanceof Map<?, ?> h) {
+            h.forEach((k, v) -> rendered.put(String.valueOf(k), TemplateEngine.render(String.valueOf(v), ctx)));
         }
-
-        return cur;
-    }
-
-    private Object normalizeValue(Object value) {
-        if (value == null) return null;
-
-        if (value instanceof String s) {
-            String t = s.trim();
-            if (t.matches("^-?\\d+$")) {
-                try {
-                    return Integer.parseInt(t);
-                } catch (Exception ignored) {
-                }
-            }
-            if (t.matches("^-?\\d+\\.\\d+$")) {
-                try {
-                    return Double.parseDouble(t);
-                } catch (Exception ignored) {
-                }
-            }
-            return s;
-        }
-
-        return value;
-    }
-
-
-    private boolean isHttpError(int status) {
-        return status >= 400;
-    }
-
-    private boolean isStopOnFail(Map<String, Object> config) {
-        if (config == null) return true;
-
-        Object policy = config.get("errorPolicy");
-        if (policy == null) policy = config.get("onError");
-        if (policy == null) return true;
-
-        String p = String.valueOf(policy).trim();
-        if (p.isBlank()) return true;
-        return p.equalsIgnoreCase("STOP_ON_FAIL") || p.equalsIgnoreCase("STOP");
-    }
-
-    private Map<String, Object> extractConfig(Node node) {
-        if (node.data == null) return Map.of();
-        Object nested = node.data.get("config");
-        if (nested instanceof Map<?, ?> m) return (Map<String, Object>) m;
-        return node.data;
-    }
-
-    private String asString(Object v) {
-        if (v == null) return null;
-        return String.valueOf(v);
-    }
-
-    private Integer asInt(Object v) {
-        if (v == null) return null;
-        if (v instanceof Number n) return n.intValue();
-        try {
-            return Integer.parseInt(String.valueOf(v));
-        } catch (Exception e) {
-            return null;
-        }
+        return rendered;
     }
 }

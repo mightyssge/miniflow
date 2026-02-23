@@ -2,73 +2,41 @@ package com.miniflow.strategies;
 
 import com.miniflow.context.ExecutionContext;
 import com.miniflow.model.Node;
-
+import com.miniflow.utils.ExpressionEvaluator;
+import com.miniflow.utils.TypeConverter;
 import java.util.Map;
 
 public class ConditionalStrategy implements NodeExecutor {
+
     @Override
     public void execute(Node node, ExecutionContext context) throws Exception {
-        Map<String, Object> config = extractConfig(node);
+        Map<String, Object> config = node.getConfig();
 
-        String condition = asString(config.get("condition"));
-        if (condition == null) condition = asString(config.get("expression"));
-        if (condition == null) throw new Exception("Missing condition in node config");
+        // 1. Obtener la condición
+        String condition = TypeConverter.asString(
+            config.getOrDefault("condition", config.get("expression"))
+        );
 
-        boolean result = eval(condition, context);
-        context.setVariable("__branch", result ? "TRUE" : "FALSE");
-    }
-
-    private boolean eval(String expr, ExecutionContext context) {
-        String s = expr.trim();
-        String op = s.contains("==") ? "==" : s.contains("!=") ? "!=" : null;
-        if (op == null) return false;
-
-        String[] parts = s.split(op, 2);
-        if (parts.length != 2) return false;
-
-        String left = parts[0].trim();
-        String right = parts[1].trim();
-
-        if (left.startsWith("context.")) left = left.substring("context.".length());
-
-        Object lv = context.getVariable(left);
-        Object rv = parseLiteral(right);
-
-        if (lv == null && rv == null) return "==".equals(op);
-        if (lv == null || rv == null) return "!=".equals(op);
-
-        if (lv instanceof Number && rv instanceof Number) {
-            double a = ((Number) lv).doubleValue();
-            double b = ((Number) rv).doubleValue();
-            return "==".equals(op) ? a == b : a != b;
+        if (condition == null || condition.isBlank()) {
+            throw new Exception("Conditional node requires a 'condition' config");
         }
 
-        String a = String.valueOf(lv);
-        String b = String.valueOf(rv);
-        return "==".equals(op) ? a.equals(b) : !a.equals(b);
-    }
+        // 2. Evaluar usando el Utility
+        boolean result = ExpressionEvaluator.evaluate(condition, context);
+        String branch = result ? "TRUE" : "FALSE";
 
-    private Object parseLiteral(String raw) {
-        String r = raw.trim();
-        if ((r.startsWith("\"") && r.endsWith("\"")) || (r.startsWith("'") && r.endsWith("'"))) {
-            return r.substring(1, r.length() - 1);
-        }
-        if ("true".equalsIgnoreCase(r)) return true;
-        if ("false".equalsIgnoreCase(r)) return false;
-        try { return Integer.parseInt(r); } catch (Exception ignored) {}
-        try { return Double.parseDouble(r); } catch (Exception ignored) {}
-        return r;
-    }
-
-    private Map<String, Object> extractConfig(Node node) {
-        if (node.data == null) return Map.of();
-        Object nested = node.data.get("config");
-        if (nested instanceof Map<?, ?> m) return (Map<String, Object>) m;
-        return node.data;
-    }
-
-    private String asString(Object v) {
-        if (v == null) return null;
-        return String.valueOf(v);
+        
+        // 3. NO usamos context.setVariable("__branch", branch) porque eso ensucia el global.
+        // En su lugar, el WorkflowRunner debería consultar context.getNodeOutput(node.getId())
+        // para saber qué rama tomar, o podrías tener un método específico context.setLastBranch(branch).
+        
+        // De momento, para mantener compatibilidad con tu Runner pero limpiar el LOG,
+        // guardamos todo el resultado técnico en NodeOutput:
+        context.setNodeOutput(node.getId(), Map.of(
+            "evaluatedCondition", condition,
+            "result", result,
+            "selectedBranch", branch
+        ));
+    
     }
 }

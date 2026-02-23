@@ -1,4 +1,5 @@
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\context\ExecutionContext.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\core\NodeResolver.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\core\WorkflowRunner.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\factory\ExecutorFactory.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\Main.java
@@ -9,6 +10,15 @@ C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategie
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\ConditionalStrategy.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\CreateFolderStrategy.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\EndStrategy.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\ExecutionResult.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\HttpRequestStrategy.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\LoggingNodeDecorator.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\NodeExecutor.java
 C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\strategies\StartStrategy.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\ExpressionEvaluator.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\HttpHelper.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\JsonUtils.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\LogUtils.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\OSUtils.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\TemplateEngine.java
+C:\Users\villa\Desktop\miniflow\java-engine\src\main\java\com\miniflow\utils\TypeConverter.java

@@ -1,35 +1,55 @@
 package com.miniflow.strategies;
 
-import com.miniflow.model.Node;
 import com.miniflow.context.ExecutionContext;
+import com.miniflow.model.Node;
+import com.miniflow.utils.TemplateEngine;
+import com.miniflow.utils.TypeConverter;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Map;
 
+/**
+ * REFACTOR: Ahora soporta plantillas {{variable}} en la ruta y el nombre.
+ * Usa los Utils para evitar errores de casteo y redundancia.
+ */
 public class CreateFolderStrategy implements NodeExecutor {
+
     @Override
     public void execute(Node node, ExecutionContext context) throws Exception {
-        Map<String, Object> config = extractConfig(node);
+        // 1. Obtenemos configuración limpia desde el modelo
+        Map<String, Object> config = node.getConfig();
         
-        String name = (String) config.get("folderName");
-        String path = (String) config.get("folderPath");
+        // 2. Resolvemos nombres y rutas (con soporte para variables del contexto)
+        String rawName = TypeConverter.asString(config.get("folderName"));
+        String rawPath = TypeConverter.asString(config.get("folderPath"));
 
-        if (name == null || path == null) throw new Exception("Missing folderName or folderPath in node config");
+        if (rawName == null || rawPath == null) {
+            throw new Exception("Missing folderName or folderPath in node configuration");
+        }
 
-        File dir = Paths.get(path, name).toFile();
+        String folderName = TemplateEngine.render(rawName, context);
+        String folderPath = TemplateEngine.render(rawPath, context);
+
+        // 3. Lógica de Negocio: Creación de directorio
+        File dir = Paths.get(folderPath, folderName).toFile();
+        boolean alreadyExists = dir.exists();
         
-        if (!dir.exists()) {
+        if (!alreadyExists) {
             boolean created = dir.mkdirs();
-            if (!created) throw new Exception("Could not create folder: " + dir.getAbsolutePath());
+            if (!created) {
+                throw new Exception("System failed to create folder: " + dir.getAbsolutePath());
+            }
         }
 
-        context.setVariable("lastCreatedFolder", dir.getAbsolutePath());
-        }
-
-    private Map<String, Object> extractConfig(Node node) {
-        if (node.data == null) return Map.of();
-        Object nested = node.data.get("config");
-        if (nested instanceof Map<?, ?> m) return (Map<String, Object>) m;
-        return node.data;
+        // 4. Output para el motor y para el Modal de React
+        String absolutePath = dir.getAbsolutePath();
+        context.setVariable("lastCreatedFolder", absolutePath);
+        
+        context.setNodeOutput(node.id, Map.of(
+            "folderName", folderName,
+            "fullPath", absolutePath,
+            "status", alreadyExists ? "EXISTED" : "CREATED",
+            "success", true
+        ));
     }
 }

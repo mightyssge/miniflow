@@ -1,39 +1,64 @@
+// electron/services/workflowRunner.ts
 import { spawn } from "child_process";
+import { BrowserWindow, app } from "electron";
+import path from "path";
 
-/**
- * Ejecuta el motor Java enviando un workflow completo en formato JSON.
- * 
- * - Lanza el JAR como proceso hijo.
- * - Envía el workflow por stdin.
- * - Captura la salida estándar (stdout).
- * - Resuelve la promesa cuando el proceso finaliza.
- */
-export function runWorkflow(workflowJson: any): Promise<string> {
-
+export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    const engineDir = path.join(app.getAppPath(), "dist-java-engine");
+    
+    // Lanzamos el proceso dentro de la carpeta correcta
+    const process = spawn("java", ["-jar", "engine.jar"], {
+      cwd: engineDir
+    });
+    
+    const mainWindow = BrowserWindow.getAllWindows()[0];
+    let fullStdout = "";
+    let fullStderr = "";
 
-    // Ejecuta: java -jar engine.jar
-    const process = spawn("java", ["-jar", "engine.jar"]);
-
-    let output = "";
-
-    // Envía el JSON al proceso Java a través de stdin
+    // Escribimos el JSON al motor
     process.stdin.write(JSON.stringify(workflowJson));
-    process.stdin.end(); // Importante: cerrar stdin para que Java continúe
+    process.stdin.end();
 
-    // Acumula la salida estándar del proceso
     process.stdout.on("data", (data) => {
-      output += data.toString();
+      const chunk = data.toString();
+      fullStdout += chunk;
+
+      // Quitamos el prefijo manual de aquí porque el chunk ya lo trae de Java
+      // Solo hacemos trim para evitar saltos de línea extra en la terminal de Node
+      console.log(chunk.trim()); 
+      
+      if (mainWindow) {
+        mainWindow.webContents.send("workflow-log-stdout", chunk);
+      }
     });
 
-    // Cuando el proceso termina, resolvemos con la salida
-    process.on("close", () => {
-      resolve(output);
+    process.stderr.on("data", (data) => {
+      const chunk = data.toString();
+      fullStderr += chunk;
+
+      // Aquí sí podemos mantener el prefijo si Java no lo pone en stderr
+      console.error(`[JAVA-STDERR]: ${chunk.trim()}`);
+      
+      if (mainWindow) {
+        mainWindow.webContents.send("workflow-log-stderr", chunk);
+      }
     });
 
-    // Si ocurre un error al iniciar o ejecutar el proceso
-    process.on("error", reject);
+    process.on("close", (code) => {
+      console.log(`[JAVA]: Proceso finalizado con código ${code}`);
+      // Resolvemos con el objeto que espera tu ViewModel
+      resolve({
+        ok: code === 0,
+        exitCode: code ?? 0,
+        stdout: fullStdout,
+        stderr: fullStderr
+      });
+    });
 
+    process.on("error", (err) => {
+      console.error("[JAVA]: Error al iniciar el proceso", err);
+      reject(err);
+    });
   });
-
 }

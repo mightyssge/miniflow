@@ -6,10 +6,10 @@ import { registerWorkflowHandlers } from "./ipc/workflowHandlers.js";
 // Cuando Electron esté listo
 app.whenReady().then(() => {
 
-  // 1️⃣ Crear ventana principal
+  // Crear ventana principal
   createMainWindow();
 
-  // 2️⃣ Registrar handlers IPC
+  // Registrar handlers IPC
   registerFileHandlers();
   registerWorkflowHandlers();
 
