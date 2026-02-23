@@ -6,18 +6,20 @@ import path from "path";
 export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const engineDir = path.join(app.getAppPath(), "dist-java-engine");
-    
+
     // Lanzamos el proceso dentro de la carpeta correcta
     const process = spawn("java", ["-jar", "engine.jar"], {
       cwd: engineDir
     });
-    
+
     const mainWindow = BrowserWindow.getAllWindows()[0];
     let fullStdout = "";
     let fullStderr = "";
 
     // Escribimos el JSON al motor
-    process.stdin.write(JSON.stringify(workflowJson));
+    // workflowJson ya viene como string desde el frontend (JSON.stringify se hizo allá)
+    const payload = typeof workflowJson === "string" ? workflowJson : JSON.stringify(workflowJson);
+    process.stdin.write(payload);
     process.stdin.end();
 
     process.stdout.on("data", (data) => {
@@ -26,8 +28,8 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
 
       // Quitamos el prefijo manual de aquí porque el chunk ya lo trae de Java
       // Solo hacemos trim para evitar saltos de línea extra en la terminal de Node
-      console.log(chunk.trim()); 
-      
+      console.log(chunk.trim());
+
       if (mainWindow) {
         mainWindow.webContents.send("workflow-log-stdout", chunk);
       }
@@ -39,7 +41,7 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
 
       // Aquí sí podemos mantener el prefijo si Java no lo pone en stderr
       console.error(`[JAVA-STDERR]: ${chunk.trim()}`);
-      
+
       if (mainWindow) {
         mainWindow.webContents.send("workflow-log-stderr", chunk);
       }

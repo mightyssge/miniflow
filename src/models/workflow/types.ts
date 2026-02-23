@@ -9,6 +9,11 @@ export interface CommandConfig {
   scriptPath?: string
   args: string
   outputKey?: string
+  envVars?: string
+  cwd?: string
+  timeoutMs?: number
+  captureOutput?: string
+  errorPolicy?: ErrorPolicy
 }
 
 export interface HttpRequestConfig {
@@ -17,6 +22,9 @@ export interface HttpRequestConfig {
   timeoutMs: number
   retries: number
   errorPolicy: ErrorPolicy
+  headers?: string
+  queryParams?: string
+  body?: string
   map?: {
     status?: string
     payload?: string
@@ -25,6 +33,10 @@ export interface HttpRequestConfig {
 
 export interface ConditionalConfig {
   condition: string
+  leftOperand?: string
+  operator?: string
+  rightOperand?: string
+  errorPolicy?: ErrorPolicy
 }
 
 export type NodeConfig =
@@ -49,4 +61,20 @@ export interface Workflow {
   edges: FlowEdge[]
   lastRunAt?: string
   validationStatus?: 'valid' | 'invalid' | 'pending'
+}
+
+/* ── Validation (RF-A20..RF-A26) ── */
+export type ValidationSeverity = "error" | "warning" | "info"
+
+export interface ValidationIssue {
+  severity: ValidationSeverity
+  nodeId?: string
+  message: string
+  /** 'focus' = UI can centre the canvas on this node */
+  action?: "focus" | "none"
+}
+
+export interface ValidationReport {
+  isValid: boolean
+  issues: ValidationIssue[]
 }
