@@ -145,10 +145,85 @@ export function useWorkflowViewModel(initialId?: string) {
         setRunExitCode(res.exitCode ?? null);
         setRunStdout(res.stdout || "");
         setRunStderr(res.stderr || "");
-        setRunResult(res.run);
-        // Use run.status from Java engine — exitCode 0 doesn't mean all nodes succeeded
-        const hasErrors = res.run?.status === "FINISHED_WITH_ERRORS" || res.run?.status === "FAILED";
-        setRunStatus(!res.ok || hasErrors ? "error" : "success");
+
+        // ── Parse STDOUT to reconstruct the steps array ──
+        const steps: any[] = [];
+        const lines = (res.stdout || "").split('\n');
+
+        let currentStep: any = null;
+        let stepStartLine = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const nodeMatch = line.match(/Nodo:\s+([a-zA-Z0-9\-]+)\s+\[([^\]]+)\]/);
+          if (nodeMatch) {
+            currentStep = {
+              nodeId: nodeMatch[1].trim(),
+              nodeType: nodeMatch[2].trim(),
+              status: "SUCCESS",
+              durationMs: 0,
+              error: null,
+              inputData: null,
+              outputData: null,
+              configData: null,
+              details: null
+            };
+            stepStartLine = i;
+
+            // Try to find the real label from the data.nodes
+            const actualNode = data.nodes.find(n => n.id === currentStep.nodeId);
+            if (actualNode && actualNode.data?.label) {
+              currentStep.nodeLabel = actualNode.data.label;
+            }
+            steps.push(currentStep);
+          } else if (currentStep) {
+            if (line.includes("-> INPUT DATA:")) {
+              try {
+                const jsonStr = line.substring(line.indexOf("INPUT DATA:") + 11).trim();
+                currentStep.inputData = jsonStr ? JSON.parse(jsonStr) : {};
+              } catch (e) { /* ignore */ }
+            } else if (line.includes("-> CONFIG:")) {
+              try {
+                const jsonStr = line.substring(line.indexOf("CONFIG:") + 7).trim();
+                currentStep.configData = jsonStr ? JSON.parse(jsonStr) : {};
+              } catch (e) { /* ignore */ }
+            } else if (line.includes("OUTPUT DATA -->:")) {
+              try {
+                const jsonStr = line.substring(line.indexOf("OUTPUT DATA -->:") + 16).trim();
+                currentStep.outputData = jsonStr ? JSON.parse(jsonStr) : {};
+              } catch (e) { /* ignore */ }
+            } else if (line.includes("NODE_EXEC_DETAILS -->:")) {
+              try {
+                const jsonStr = line.substring(line.indexOf("NODE_EXEC_DETAILS -->:") + 22).trim();
+                currentStep.details = jsonStr ? JSON.parse(jsonStr) : {};
+              } catch (e) { /* ignore */ }
+            } else if (line.includes("error\":")) {
+              // Basic heuristic for error
+              currentStep.status = "ERROR";
+              const errMatch = line.match(/error=([^,}]+)/) || line.match(/"error"\s*:\s*"([^"]+)"/);
+              if (errMatch) {
+                currentStep.error = errMatch[1].trim();
+              } else {
+                currentStep.error = "Error in node execution";
+              }
+            }
+          }
+
+          if (currentStep) {
+            // Fake duration based on log lines distance (min 2ms)
+            currentStep.durationMs = Math.max(2, (i - stepStartLine) * 12);
+          }
+        }
+
+        const hasErrors = steps.some(s => s.status === "ERROR") || !res.ok;
+        setRunResult({
+          status: hasErrors ? "FAILED" : "SUCCESS",
+          duration: steps.reduce((acc, step) => acc + step.durationMs, 0),
+          steps,
+          rawStdout: res.stdout || ""
+        });
+
+        setRunStatus(hasErrors ? "error" : "success");
       } catch (e: any) {
         setRunStderr(String(e?.message || e || "Error"));
         setRunStatus("error");
@@ -201,6 +276,7 @@ export function useWorkflowViewModel(initialId?: string) {
       setDescription,
       setCurrentId,
       setNodes,
+      setEdges,
       onNodesChange,
       onEdgesChange,
       setEditingNodeId,

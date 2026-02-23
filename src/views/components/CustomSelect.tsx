@@ -12,9 +12,10 @@ interface Props {
     options: Option[];
     onChange: (value: string) => void;
     placeholder?: string;
+    disabled?: boolean;
 }
 
-export function CustomSelect({ value, options, onChange, placeholder }: Props) {
+export function CustomSelect({ value, options, onChange, placeholder, disabled }: Props) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -43,7 +44,8 @@ export function CustomSelect({ value, options, onChange, placeholder }: Props) {
             <button
                 type="button"
                 className={`${styles.trigger} ${open ? styles.triggerOpen : ""}`}
-                onClick={() => setOpen(!open)}
+                onClick={() => !disabled && setOpen(!open)}
+                disabled={disabled}
             >
                 <span className={selected ? styles.triggerValue : styles.triggerPlaceholder}>
                     {selected?.label || placeholder || "Seleccionar…"}

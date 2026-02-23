@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useMemo, useState } from "react";
 import ReactFlow, { Background, BackgroundVariant, MarkerType, ReactFlowProvider, useReactFlow } from "reactflow";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
     Save, CheckCircle, Play,
-    Download, Trash2, Clipboard, AlertTriangle
+    Download, Trash2, Clipboard, AlertTriangle,
+    Activity, Loader2, ChevronRight, ChevronDown
 } from "lucide-react";
+import confetti from "canvas-confetti";
 import "reactflow/dist/style.css";
 
 import { nodeTypes } from "../components/nodes/nodeTypes";
 import { useWorkflowViewModel } from "../../viewmodels/useWorkflowViewModel";
-import { serializeWorkflow } from "../../models/workflow/WorkflowSerializer";
+import { serializeWorkflow, deserializeWorkflow } from "../../models/workflow/WorkflowSerializer";
 import { Sidebar } from "../components/Sidebar";
 import { NodeConfigModal } from "../components/NodeConfigModal";
 import { NodeActionsProvider } from "../components/NodeActionsContext";
@@ -35,18 +37,29 @@ function EditorInner() {
     const { state, handlers } = useWorkflowViewModel(id);
     const reactFlowInstance = useReactFlow();
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
     const [toast, setToast] = useState<string | null>(null);
     const [importOpen, setImportOpen] = useState(false);
     const [importJson, setImportJson] = useState("");
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [statusExpanded, setStatusExpanded] = useState(false);
+    const [pillTab, setPillTab] = useState<"steps" | "terminal">("steps");
+    const [timelineStep, setTimelineStep] = useState<any>(null);
+    const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
 
     // Auto-hide status pill after 8s on success
     useEffect(() => {
         if (state.runStatus === "success") {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.9 },
+                colors: ['#28b478', '#78b4ff', '#a78bfa'],
+                zIndex: 9999
+            });
             const timer = setTimeout(() => {
-                // Reset to idle after 8s on success
+                // Return to idle state optionally, or just leave it.
             }, 8000);
             return () => clearTimeout(timer);
         }
@@ -66,6 +79,42 @@ function EditorInner() {
         const portable = serializeWorkflow(data as any);
         navigator.clipboard.writeText(JSON.stringify(portable, null, 2));
         showToast("El workflow ha sido copiado al portapapeles");
+    }, [handlers, state, showToast]);
+
+    const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const content = evt.target?.result;
+            if (typeof content === "string") {
+                try {
+                    const parsed = JSON.parse(content);
+                    const flow = deserializeWorkflow(parsed);
+                    handlers.setNodes(flow.nodes);
+                    handlers.setEdges(flow.edges);
+                    showToast("Workflow importado desde archivo");
+                } catch (err: any) {
+                    showToast("Error al importar el archivo JSON");
+                }
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+    }, [handlers, showToast]);
+
+    const downloadJsonFile = useCallback(() => {
+        handlers.saveCurrent();
+        const data = { id: state.currentId, name: state.name, description: state.description, nodes: state.nodes, edges: state.edges };
+        const portable = serializeWorkflow(data as any);
+        const blob = new Blob([JSON.stringify(portable, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${state.name || "workflow"}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Archivo descargado");
     }, [handlers, state, showToast]);
 
     /* ── Drag & Drop ── */
@@ -95,18 +144,12 @@ function EditorInner() {
 
             <div className={styles.main}>
                 <header className={styles.topbar}>
-                    {/* ── Left: Breadcrumb + Description ── */}
-                    <div className={styles.metaTitle}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <Link to="/workflows" style={{ color: "#78b4ff", fontWeight: 900, textDecoration: "none", fontSize: "15px" }}>MINIFLOW</Link>
-                            <span style={{ opacity: 0.2 }}>/</span>
-                            <strong>{state.name}</strong>
-                        </div>
-                        <div className={styles.descriptionText}>{state.description || "—"}</div>
+                    {/* ── Center: Title & Timestamp ── */}
+                    <div className={styles.timestamp} style={{ flex: 1, textAlign: 'left', marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>{state.name}</span>
+                        <span style={{ opacity: 0.5, fontSize: '12px' }}>|</span>
+                        <span>{formatTimeAgo(state.lastSavedAt)}</span>
                     </div>
-
-                    {/* ── Center: Timestamp ── */}
-                    <div className={styles.timestamp}>{formatTimeAgo(state.lastSavedAt)}</div>
 
                     {/* ── Primary Actions ── */}
                     <div className={styles.primaryActions}>
@@ -119,23 +162,59 @@ function EditorInner() {
                         <button className={`${styles.tbBtn} ${styles.tbExecute}`} onClick={handlers.executeNow} title="Ejecutar">
                             <Play size={15} /> Ejecutar
                         </button>
-                    </div>
 
-                    {/* ── Separator ── */}
-                    <div className={styles.tbSep} />
+                        <div className={styles.tbSep} />
 
-                    {/* ── Right: Secondary Actions ── */}
-                    <div className={styles.secondaryActions}>
-                        <button className={`${styles.tbBtn} ${styles.tbSubtle}`} onClick={() => { setImportJson(""); setImportOpen(true); }} title="Importar JSON">
-                            <Download size={14} /> Importar
-                        </button>
-                        <button className={`${styles.tbBtn} ${styles.tbSubtle}`} onClick={copyToClipboard} title="Copiar JSON al portapapeles">
-                            <Clipboard size={14} /> Exportar
-                        </button>
+                        <input
+                            type="file"
+                            accept=".json"
+                            style={{ display: "none" }}
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                        />
+
+                        {/* Dropdown Herramientas */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                className={`${styles.tbBtn} ${styles.tbSubtle}`}
+                                onClick={() => setToolsMenuOpen(!toolsMenuOpen)}
+                            >
+                                Herramientas <ChevronDown size={14} style={{ marginLeft: 4 }} />
+                            </button>
+
+                            {toolsMenuOpen && (
+                                <div className={styles.toolsDropdown}>
+                                    <button className={styles.dropdownItem} onClick={() => { setToolsMenuOpen(false); setImportJson(""); setImportOpen(true); }}>
+                                        <Download size={14} /> Importar Texto
+                                    </button>
+                                    <button className={styles.dropdownItem} onClick={() => { setToolsMenuOpen(false); fileInputRef.current?.click(); }}>
+                                        <Download size={14} /> Importar Archivo
+                                    </button>
+                                    <div className={styles.dropdownDivider} />
+                                    <button className={styles.dropdownItem} onClick={() => { setToolsMenuOpen(false); copyToClipboard(); }}>
+                                        <Clipboard size={14} /> Copiar JSON
+                                    </button>
+                                    <button className={styles.dropdownItem} onClick={() => { setToolsMenuOpen(false); downloadJsonFile(); }}>
+                                        <Clipboard size={14} /> Guardar JSON
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className={styles.tbSep} />
+
                         <button className={`${styles.tbBtn} ${styles.tbDanger}`} onClick={() => setDeleteOpen(true)} title="Eliminar workflow">
                             <Trash2 size={14} />
                         </button>
                     </div>
+
+                    {/* ── Separator ── */}
+                    {/* <div className={styles.tbSep} /> */} {/* This separator is moved inside primaryActions */}
+
+                    {/* ── Right: Secondary Actions ── */}
+                    {/* <div className={styles.secondaryActions}> */} {/* This div is removed */}
+                    {/* The buttons previously here are moved into primaryActions */}
+                    {/* </div> */}
                 </header>
 
                 <main className={styles.canvasWrap} ref={wrapperRef}>
@@ -186,37 +265,104 @@ function EditorInner() {
                         }}
                         title={state.runStatus === "idle" ? "Click para ejecutar" : state.runStatus === "running" ? "Ejecutando…" : "Click para ver detalles"}
                     >
-                        <span className={styles.statusDot} />
+                        {state.runStatus === "idle" && <Activity size={16} className={styles.iconIdle} />}
+                        {state.runStatus === "running" && <Loader2 size={16} className={styles.iconSpin} />}
+                        {state.runStatus === "success" && <CheckCircle size={16} className={styles.iconPop} />}
+                        {state.runStatus === "error" && <AlertTriangle size={16} className={styles.iconShake} />}
+
                         <span className={styles.statusLabel}>
                             {state.runStatus === "idle" && "Motor listo"}
-                            {state.runStatus === "running" && "Ejecutando…"}
-                            {state.runStatus === "success" && `✓ Ejecución exitosa`}
-                            {state.runStatus === "error" && `✕ Error en ejecución`}
+                            {state.runStatus === "running" && "Motor ejecutando"}
+                            {state.runStatus === "success" && "Ejecución exitosa"}
+                            {state.runStatus === "error" && "Error en ejecución"}
                         </span>
-                        {state.runStatus === "running" && <span className={styles.statusSpinner} />}
+
+                        {state.runResult && (state.runStatus === "success" || state.runStatus === "error") && (
+                            <span className={styles.statusDurationBadge}>
+                                {state.runResult.duration || 0}ms
+                            </span>
+                        )}
+
                         {(state.runStatus === "success" || state.runStatus === "error") && (
-                            <span className={styles.statusChevron}>{statusExpanded ? "▾" : "▸"}</span>
+                            <ChevronRight size={14} className={`${styles.statusChevron} ${statusExpanded ? styles.cxExpanded : ''}`} />
                         )}
                     </button>
 
+                    {/* Tickers */}
+                    {state.runStatus === "running" && state.runStdout && (
+                        <div className={styles.runTicker}>
+                            {state.runStdout.trim().split('\n').pop() || "..."}
+                        </div>
+                    )}
+
+                    {/* Error Snippet */}
+                    {state.runStatus === "error" && state.runStderr && !statusExpanded && (
+                        <div className={styles.errorTicker}>
+                            {state.runStderr.trim().split('\n')[0] || "..."}
+                        </div>
+                    )}
+
                     {statusExpanded && state.runStatus !== "running" && state.runStatus !== "idle" && (
                         <div className={styles.statusDetail}>
-                            {state.runResult?.steps?.length > 0 && (
-                                <div className={styles.stepsList}>
-                                    {state.runResult.steps.map((step: any, i: number) => (
-                                        <div key={i} className={`${styles.stepItem} ${step.status === "ERROR" ? styles.stepError : styles.stepOk}`}>
-                                            <span className={styles.stepIndex}>{i + 1}</span>
-                                            <span className={styles.stepLabel}>{step.nodeLabel || step.nodeId}</span>
-                                            <span className={styles.stepType}>{step.nodeType}</span>
-                                            <span className={styles.stepStatus}>{step.status}</span>
-                                            <span className={styles.stepDuration}>{step.durationMs}ms</span>
-                                            {step.error && <div className={styles.stepErrorMsg}>{step.error}</div>}
+                            {/* Terminal / Steps Tabs */}
+                            <div className={styles.pillTabs}>
+                                <button
+                                    className={`${styles.pillTabBtn} ${pillTab === 'steps' ? styles.pillTabBtnActive : ''}`}
+                                    onClick={() => setPillTab('steps')}
+                                >Pasos</button>
+                                <button
+                                    className={`${styles.pillTabBtn} ${pillTab === 'terminal' ? styles.pillTabBtnActive : ''}`}
+                                    onClick={() => setPillTab('terminal')}
+                                >Terminal</button>
+                            </div>
+
+                            {/* View Content */}
+                            {pillTab === 'steps' && state.runResult?.steps?.length > 0 && (
+                                <div className={styles.stepsTimeline}>
+                                    {state.runResult.steps.map((step: any, i: number, arr: any[]) => (
+                                        <div
+                                            key={i}
+                                            className={`${styles.timelineItem} ${step.status === "ERROR" ? styles.timelineItemError : styles.timelineItemOk}`}
+                                            style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                const actualNode = state.nodes.find(n => n.id === step.nodeId);
+                                                if (actualNode) {
+                                                    setTimelineStep(step);
+                                                    handlers.setEditingNodeId(actualNode.id);
+                                                }
+                                            }}
+                                        >
+                                            <div className={styles.timelineNode}>
+                                                <div className={styles.timelineDot}></div>
+                                                {i < arr.length - 1 && <div className={styles.timelineLine}></div>}
+                                            </div>
+
+                                            <div className={styles.timelineContent}>
+                                                <div className={styles.timelineHeader}>
+                                                    <span className={styles.timelineNodeName}>{step.nodeLabel || step.nodeId}</span>
+                                                    <span className={styles.timelineNodeType}>{step.nodeType.toUpperCase()}</span>
+                                                </div>
+                                                <div className={styles.timelineMeta}>
+                                                    <span className={`${styles.timelineStatus} ${step.status === "ERROR" ? styles.tsError : styles.tsOk}`}>
+                                                        {step.status}
+                                                    </span>
+                                                    <span className={styles.timelineDuration}>{step.durationMs}ms</span>
+                                                </div>
+                                                {step.error && (
+                                                    <div className={styles.timelineErrorBubble}>
+                                                        <AlertTriangle size={12} /> {step.error}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                            {state.runStderr && (
-                                <pre className={styles.runOutput}>{state.runStderr}</pre>
+
+                            {pillTab === 'terminal' && (
+                                <div className={styles.terminalView}>
+                                    <pre className={styles.terminalPre}>{state.runResult?.rawStdout || "No hay salida estándar (stdout) disponible."}</pre>
+                                </div>
                             )}
                         </div>
                     )}
@@ -227,8 +373,13 @@ function EditorInner() {
             {state.editingNode && (
                 <NodeConfigModal
                     node={state.editingNode}
+                    execStep={timelineStep}
+                    initialTab={timelineStep ? "output" : "parameters"}
                     onSave={handlers.updateNodeById}
-                    onClose={() => handlers.setEditingNodeId(null)}
+                    onClose={() => {
+                        handlers.setEditingNodeId(null);
+                        setTimelineStep(null);
+                    }}
                 />
             )}
 
