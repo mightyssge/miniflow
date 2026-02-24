@@ -1,9 +1,16 @@
 import type { Node, Edge } from "reactflow"
 
 export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer"
-
 export type ErrorPolicy = "STOP_ON_FAIL" | "CONTINUE_ON_FAIL"
 
+/* ── 1. Eliminando Data Clumps: Encapsulamos la expresión condicional ── */
+export interface ComparisonExpression {
+  leftOperand: string
+  operator: string
+  rightOperand: string
+}
+
+/* ── 2. Configuraciones Específicas ── */
 export interface CommandConfig {
   command: string
   scriptPath?: string
@@ -13,17 +20,16 @@ export interface CommandConfig {
   cwd?: string
   timeoutMs?: number
   captureOutput?: string
-  errorPolicy?: ErrorPolicy
+  errorPolicy: ErrorPolicy // Obligatorio para evitar ambigüedad
 }
 
 export interface HttpRequestConfig {
-  method: string
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   url: string
   timeoutMs: number
   retries: number
   errorPolicy: ErrorPolicy
   headers?: string
-  queryParams?: string
   body?: string
   map?: {
     status?: string
@@ -33,10 +39,8 @@ export interface HttpRequestConfig {
 
 export interface ConditionalConfig {
   condition: string
-  leftOperand?: string
-  operator?: string
-  rightOperand?: string
-  errorPolicy?: ErrorPolicy
+  expression?: ComparisonExpression // Grupo de datos extraído
+  errorPolicy: ErrorPolicy
 }
 
 export interface TimerConfig {
@@ -44,21 +48,18 @@ export interface TimerConfig {
   unit: "ms" | "s" | "min"
 }
 
-export type NodeConfig =
-  | CommandConfig
-  | HttpRequestConfig
-  | ConditionalConfig
-  | TimerConfig
-  | Record<string, never>
+/* ── 3. Eliminando Switch Statements (Discriminated Union) ── */
+// Ahora el compilador SABRÁ que si el tipo es 'command', la config es CommandConfig
+export type FlowNode = 
+  | Node<{ label: string; config: CommandConfig }, 'command'>
+  | Node<{ label: string; config: HttpRequestConfig }, 'http_request'>
+  | Node<{ label: string; config: ConditionalConfig }, 'conditional'>
+  | Node<{ label: string; config: TimerConfig }, 'timer'>
+  | Node<{ label: string; config: Record<string, never> }, 'start' | 'end'>
 
-export interface NodeData {
-  label: string
-  config?: NodeConfig
-}
-
-export type FlowNode = Node<NodeData, NodeType>
 export type FlowEdge = Edge
 
+/* ── Workflow e interfaces de soporte ── */
 export interface Workflow {
   id: string
   name: string
@@ -66,18 +67,16 @@ export interface Workflow {
   nodes: FlowNode[]
   edges: FlowEdge[]
   lastRunAt?: string
-  validationStatus?: 'valid' | 'invalid' | 'pending'
+  validationStatus: 'valid' | 'invalid' | 'pending' // Quitamos el opcional
 }
 
-/* ── Validation (RF-A20..RF-A26) ── */
 export type ValidationSeverity = "error" | "warning" | "info"
 
 export interface ValidationIssue {
   severity: ValidationSeverity
   nodeId?: string
   message: string
-  /** 'focus' = UI can centre the canvas on this node */
-  action?: "focus" | "none"
+  action: "focus" | "none"
 }
 
 export interface ValidationReport {

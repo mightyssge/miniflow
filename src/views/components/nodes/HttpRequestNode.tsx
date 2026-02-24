@@ -1,50 +1,36 @@
-import { useState, useRef, useEffect } from "react";
-import { Handle, Position, type NodeProps } from "reactflow";
-import { Globe, MoreVertical, Pencil, Copy, Trash2 } from "lucide-react";
-import { useNodeActions } from "../NodeActionsContext";
-import type { NodeData } from "../../../models/workflow/types";
+import { Globe } from "lucide-react";
+import { type NodeProps } from "reactflow";
+import type { HttpRequestConfig } from "../../../models/workflow/types";
+import BaseNodeWrapper from "./BaseNodeWrapper";
 import base from "./BaseNode.module.css";
 
-export default function HttpRequestNode({ id, data }: NodeProps<NodeData>) {
-  const { onEdit, onDuplicate, onDelete } = useNodeActions();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const cfg: any = data.config || {};
+// 1. Tipado estricto para evitar el error de 'NodeData' que no existía
+// y eliminar el uso de 'any' en la configuración.
+interface HttpRequestNodeData {
+  label: string;
+  config: HttpRequestConfig;
+}
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
+export default function HttpRequestNode({ id, data }: NodeProps<HttpRequestNodeData>) {
+  // 2. Destructuring limpio. Gracias al tipado, TS ya sabe qué hay en config.
+  const { method, url } = data.config;
 
   return (
-    <div className={base.nodeBox} style={{ borderLeft: "3px solid #78b4ff" }}>
-      <div className={base.nodeHeader}>
-        <div className={base.nodeTypeBadge} style={{ color: "#78b4ff" }}>
-          <Globe size={13} /> HTTP_REQUEST
-        </div>
-        <div className={base.kebabWrap} ref={menuRef}>
-          <button className={base.kebabBtn} onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }}>
-            <MoreVertical size={14} />
-          </button>
-          {menuOpen && (
-            <div className={base.dropdown}>
-              <button className={base.dropdownItem} onClick={() => { onEdit(id); setMenuOpen(false); }}><Pencil size={13} /> Editar</button>
-              <button className={base.dropdownItem} onClick={() => { onDuplicate(id); setMenuOpen(false); }}><Copy size={13} /> Duplicar</button>
-              <button className={base.dropdownItemDanger} onClick={() => { onDelete(id); setMenuOpen(false); }}><Trash2 size={13} /> Eliminar</button>
-            </div>
-          )}
-        </div>
-      </div>
+    <BaseNodeWrapper 
+      id={id} 
+      typeLabel="HTTP_REQUEST" 
+      icon={<Globe size={13} />} 
+      color="#78b4ff" // Mantenemos tu color original
+    >
+      {/* 3. El contenido es puramente declarativo ahora */}
       <div className={base.nodeLabel}>{data.label || "Consultar API"}</div>
+      
       <div className={base.nodeHint}>
-        {cfg.method || "GET"} {cfg.url || ""}
+        <span style={{ fontWeight: 800, marginRight: '4px', color: '#78b4ff' }}>
+          {method || "GET"}
+        </span>
+        {url || "api/v1/resource"}
       </div>
-      <Handle type="target" position={Position.Left} />
-      <Handle type="source" position={Position.Right} />
-    </div>
+    </BaseNodeWrapper>
   );
 }
