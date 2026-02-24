@@ -3,6 +3,17 @@ import { CommandForm } from "./NodeConfigForms/CommandForm";
 import { ConditionalForm } from "./NodeConfigForms/ConditionalForm";
 import { TimerForm } from "./NodeConfigForms/TimerForm";
 import styles from "./NodeConfigPanel.module.css";
+import React from 'react';
+
+// Form Registry for Open/Closed Principle
+const FormRegistry: Record<string, React.FC<any>> = {
+  "http_request": HttpRequestForm,
+  "command": CommandForm,
+  "conditional": ConditionalForm,
+  "timer": TimerForm,
+  "start": () => <div className={styles.small}>Nodo de entrada del workflow.</div>,
+  "end": () => <div className={styles.small}>Nodo de salida del workflow.</div>,
+};
 
 export function NodeConfigPanel({ selectedNode, updateSelectedNode }: any) {
   if (!selectedNode) {
@@ -21,69 +32,17 @@ export function NodeConfigPanel({ selectedNode, updateSelectedNode }: any) {
   const { type, id, data } = selectedNode;
   const config = data?.config || {};
 
-  // Adaptadores para reutilizar los formularios modulares
+  // Form Adapters
   const patchConfig = (key: string, value: any) => {
-    updateSelectedNode({
-      config: { ...config, [key]: value },
-    });
+    updateSelectedNode({ config: { ...config, [key]: value } });
   };
 
   const patchMap = (key: string, value: string) => {
-    updateSelectedNode({
-      config: {
-        ...config,
-        map: { ...(config.map || {}), [key]: value },
-      },
-    });
+    updateSelectedNode({ config: { ...config, map: { ...(config.map || {}), [key]: value } } });
   };
 
-  const renderForm = () => {
-    // En el Panel lateral usualmente siempre queremos editar, 
-    // por lo que isReadOnly es false.
-    const isReadOnly = false; 
-
-    switch (type) {
-      case "http_request":
-        return (
-          <HttpRequestForm 
-            config={config} 
-            patchConfig={patchConfig} 
-            patchMap={patchMap} 
-            isReadOnly={isReadOnly} 
-          />
-        );
-      case "command":
-        return (
-          <CommandForm 
-            config={config} 
-            patchConfig={patchConfig} 
-            isReadOnly={isReadOnly} 
-          />
-        );
-      case "conditional":
-        return (
-          <ConditionalForm 
-            config={config} 
-            patchConfig={patchConfig} 
-            isReadOnly={isReadOnly} 
-          />
-        );
-      case "timer":
-        return (
-          <TimerForm 
-            config={config} 
-            patchConfig={patchConfig} 
-            // Si TimerForm también pide isReadOnly, añádelo aquí
-          />
-        );
-      case "start":
-        return <div className={styles.small}>Nodo de entrada del workflow.</div>;
-      case "end":
-        return <div className={styles.small}>Nodo de salida del workflow.</div>;
-      default:
-        return <div className={styles.small}>Este nodo no requiere configuración extra.</div>;
-    }
-  };
+  const isReadOnly = false;
+  const ActiveForm = FormRegistry[type];
 
   return (
     <div className={styles.panel}>
@@ -95,7 +54,6 @@ export function NodeConfigPanel({ selectedNode, updateSelectedNode }: any) {
           <span className={styles.small}> {id.slice(0, 6)}</span>
         </div>
 
-        {/* Campo Etiqueta (Común a todos) */}
         <div className={styles.field} style={{ marginTop: 12 }}>
           <label>Etiqueta</label>
           <input
@@ -107,8 +65,16 @@ export function NodeConfigPanel({ selectedNode, updateSelectedNode }: any) {
 
         <hr className={styles.separator} />
 
-        {/* Formularios Dinámicos */}
-        {renderForm()}
+        {ActiveForm ? (
+          <ActiveForm
+            config={config}
+            patchConfig={patchConfig}
+            patchMap={patchMap}
+            isReadOnly={isReadOnly}
+          />
+        ) : (
+          <div className={styles.small}>Este nodo no requiere configuración extra.</div>
+        )}
       </div>
     </div>
   );

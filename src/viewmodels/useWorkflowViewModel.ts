@@ -8,7 +8,7 @@ import { makeNode } from "../models/workflow/WorkflowFactory";
 export function useWorkflowViewModel(initialId?: string) {
   const { workflows, currentId, setCurrentId, persist, remove } = useWorkflowStorage();
   const { runStatus, runResult, run } = useWorkflowExecution();
-  
+
   // Usamos el initialId para establecer el workflow activo al montar el componente
   useEffect(() => {
     if (initialId && initialId !== currentId) {
@@ -16,9 +16,9 @@ export function useWorkflowViewModel(initialId?: string) {
     }
   }, [initialId, currentId, setCurrentId]);
 
-  const current = useMemo(() => 
-    workflows.find(w => w.id === currentId) || null, 
-  [workflows, currentId]);
+  const current = useMemo(() =>
+    workflows.find(w => w.id === currentId) || null,
+    [workflows, currentId]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -40,14 +40,38 @@ export function useWorkflowViewModel(initialId?: string) {
     edges
   });
 
+  const updateNodeById = (id: string, partialData: any) => {
+    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, ...partialData } } : n));
+  };
+
+  const duplicateNode = (id: string) => {
+    setNodes(nds => {
+      const target = nds.find(n => n.id === id);
+      if (!target) return nds;
+      return nds.concat({
+        ...target,
+        id: crypto.randomUUID(),
+        position: { x: target.position.x + 50, y: target.position.y + 50 }
+      });
+    });
+  };
+
+  const deleteNode = (id: string) => {
+    setNodes(nds => nds.filter(n => n.id !== id));
+    setEdges(eds => eds.filter(e => e.source !== id && e.target !== id));
+    if (selectedNodeId === id) setSelectedNodeId(null);
+  };
+
   const handlers = {
     onNodesChange,
     onEdgesChange,
     onConnect: (params: any) => setEdges(eds => addEdge({ ...params, type: 'smoothstep' }, eds)),
     save: () => persist(getSnapshot() as any),
+    saveCurrent: () => persist(getSnapshot() as any), // Alias
     deleteCurrent: () => currentId && remove(currentId),
-    addNode: (type: any) => setNodes(nds => nds.concat(makeNode(type, { x: 150, y: 150 }))),
+    addNode: (type: any, position?: any) => setNodes(nds => nds.concat(makeNode(type, position || { x: 150, y: 150 }))),
     validate: () => setValidationReport(validate(nodes as any, edges)),
+    validateNow: () => setValidationReport(validate(nodes as any, edges)), // Alias
     execute: async () => {
       const report = validate(nodes as any, edges);
       setValidationReport(report);
@@ -56,8 +80,22 @@ export function useWorkflowViewModel(initialId?: string) {
         await run(getSnapshot());
       }
     },
+    executeNow: async () => {
+      const report = validate(nodes as any, edges);
+      setValidationReport(report);
+      if (report.isValid) {
+        persist(getSnapshot() as any);
+        await run(getSnapshot());
+      }
+    }, // Alias
     onNodeClick: (_: any, node: any) => setSelectedNodeId(node.id),
-    setCurrentId // Ahora sí lo exportamos por si tu UI necesita cambiar de workflow
+    setCurrentId,
+    setNodes,
+    setEdges,
+    setEditingNodeId: setSelectedNodeId,
+    updateNodeById,
+    duplicateNode,
+    deleteNode
   };
 
   return {

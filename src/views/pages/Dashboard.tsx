@@ -1,6 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { MoreVertical, Pencil, Trash2, Plus, Zap, ArrowLeftRight, Clock, Package, AlertTriangle } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Plus, Zap, ArrowLeftRight, Clock, Package } from "lucide-react";
 import { loadAll, saveAll } from "../../models/storage/LocalStorage";
 import { emptyWorkflow } from "../../models/workflow/WorkflowFactory";
 import type { Workflow } from "../../models/workflow/types";
@@ -20,143 +20,10 @@ function StatusDot({ status }: { status?: string }) {
     return <span className={`${styles.statusDot} ${cls}`} />;
 }
 
-function KebabMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!open) return;
-        const close = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener("mousedown", close);
-        return () => document.removeEventListener("mousedown", close);
-    }, [open]);
-
-    return (
-        <div className={styles.menuWrap} ref={ref}>
-            <button
-                className={styles.kebab}
-                onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-            >
-                <MoreVertical size={16} />
-            </button>
-            {open && (
-                <div className={styles.dropdown}>
-                    <button
-                        className={styles.dropdownItem}
-                        onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
-                    >
-                        <Pencil size={14} /> Editar Detalles
-                    </button>
-                    <button
-                        className={styles.dropdownItemDanger}
-                        onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
-                    >
-                        <Trash2 size={14} /> Eliminar
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-}
-
-function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, desc: string) => void }) {
-    const [name, setName] = useState("");
-    const [desc, setDesc] = useState("");
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name.trim()) return;
-        onCreate(name.trim(), desc.trim());
-    };
-
-    return (
-        <div className={styles.overlay} onClick={onClose}>
-            <form className={styles.modal} onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
-                <div className={styles.modalTitle}>Crear Nuevo Workflow</div>
-                <div className={styles.modalSubtitle}>Define la identidad de tu workflow antes de entrar al constructor.</div>
-
-                <div className={styles.modalField}>
-                    <label>Nombre *</label>
-                    <input
-                        autoFocus
-                        placeholder="Mi Workflow"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                    />
-                </div>
-
-                <div className={styles.modalField}>
-                    <label>Descripción</label>
-                    <textarea
-                        placeholder="¿Qué hace este workflow?"
-                        value={desc}
-                        onChange={e => setDesc(e.target.value)}
-                    />
-                </div>
-
-                <div className={styles.modalActions}>
-                    <button type="button" className={styles.btnGhost} onClick={onClose}>Cancelar</button>
-                    <button type="submit" className={styles.btnPrimary} disabled={!name.trim()}>Crear</button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-function DeleteModal({ wf, onClose, onConfirm }: { wf: Workflow; onClose: () => void; onConfirm: () => void }) {
-    return (
-        <div className={styles.overlay} onClick={onClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                <div className={styles.deleteIcon}><AlertTriangle size={40} color="#d23750" /></div>
-                <div className={styles.modalTitle}>Eliminar Workflow</div>
-                <p className={styles.deleteMessage}>
-                    ¿Estás seguro de que deseas eliminar <strong>{wf.name || "Sin título"}</strong>? Esta acción no se puede deshacer.
-                </p>
-                <div className={styles.modalActions}>
-                    <button className={styles.btnGhost} onClick={onClose}>Cancelar</button>
-                    <button className={styles.btnDanger} onClick={onConfirm}>Eliminar</button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function EditModal({ wf, onClose, onSave }: { wf: Workflow; onClose: () => void; onSave: (name: string, desc: string) => void }) {
-    const [name, setName] = useState(wf.name);
-    const [desc, setDesc] = useState(wf.description);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name.trim()) return;
-        onSave(name.trim(), desc.trim());
-    };
-
-    return (
-        <div className={styles.overlay} onClick={onClose}>
-            <form className={styles.modal} onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
-                <div className={styles.modalTitle}>Editar Detalles del Workflow</div>
-                <div className={styles.modalSubtitle}>Actualiza el nombre y la descripción de tu workflow.</div>
-
-                <div className={styles.modalField}>
-                    <label>Nombre *</label>
-                    <input autoFocus value={name} onChange={e => setName(e.target.value)} />
-                </div>
-
-                <div className={styles.modalField}>
-                    <label>Descripción</label>
-                    <textarea value={desc} onChange={e => setDesc(e.target.value)} />
-                </div>
-
-                <div className={styles.modalActions}>
-                    <button type="button" className={styles.btnGhost} onClick={onClose}>Cancelar</button>
-                    <button type="submit" className={styles.btnPrimary} disabled={!name.trim()}>Guardar</button>
-                </div>
-            </form>
-        </div>
-    );
-}
+import { CreateModal } from "../components/modals/CreateModal";
+import { DeleteModal } from "../components/modals/DeleteModal";
+import { EditModal } from "../components/modals/EditModal";
+import { KebabMenu } from "../components/common/KebabMenu";
 
 export function Dashboard() {
     const navigate = useNavigate();
