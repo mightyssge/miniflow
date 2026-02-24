@@ -1,149 +1,64 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Zap, Globe, GitBranch, Terminal, Flag, Clock,
-  ChevronDown, ChevronRight,
-  ArrowLeft, PanelLeftClose, PanelLeftOpen
-} from "lucide-react";
+import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import styles from "./Sidebar.module.css";
-import type { NodeType, ValidationReport } from "../../models/workflow/types";
+import { NODE_PALETTE } from "./nodeConstants";
+import { SectionHeader, NodePaletteCard } from "./SidebarParts";
+import { useSidebar } from "../../hooks/useSidebar";
 
-const NODE_PALETTE = [
-  { type: "start" as NodeType, label: "Start", icon: Zap, color: "#28b478" },
-  { type: "http_request" as NodeType, label: "HTTP Request", icon: Globe, color: "#78b4ff" },
-  { type: "conditional" as NodeType, label: "Condicional", icon: GitBranch, color: "#f5a623" },
-  { type: "command" as NodeType, label: "Comando", icon: Terminal, color: "#a78bfa" },
-  { type: "timer" as NodeType, label: "Timer", icon: Clock, color: "#60a5fa" },
-  { type: "end" as NodeType, label: "Fin", icon: Flag, color: "#d23750" },
-];
-
-interface SidebarProps {
-  state: {
-    name: string;
-    nodes: any[];
-    edges: any[];
-    validationReport?: ValidationReport | null;
-  };
-  handlers: {
-    addNode: (type: NodeType) => void;
-  };
-}
-
-function SectionHeader({ title, open, onToggle, collapsed }: { title: string; open: boolean; onToggle: () => void; collapsed: boolean }) {
-  if (collapsed) return null;
-  return (
-    <button className={styles.sectionHeader} onClick={onToggle}>
-      {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      <span>{title}</span>
-    </button>
-  );
-}
-
-export function Sidebar({ state, handlers }: SidebarProps) {
+export function Sidebar({ state, handlers }: any) {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const [nodesOpen, setNodesOpen] = useState(true);
-  const [summaryOpen, setSummaryOpen] = useState(true);
-
-  const validationStatus = !state.validationReport
-    ? "pending"
-    : state.validationReport.isValid
-      ? "valid"
-      : "invalid";
-
-  const statusLabel = validationStatus === "valid" ? "Válido" : validationStatus === "invalid" ? "Inválido" : "Pendiente";
+  const { ui, actions } = useSidebar(state.validationReport);
 
   return (
-    <div className={`${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
-      {/* ── Top: Brand + Toggle ── */}
+    <div className={`${styles.sidebar} ${ui.collapsed ? styles.collapsed : ""}`}>
       <div className={styles.topRow}>
-        {!collapsed && (
+        {!ui.collapsed && (
           <div className={styles.brand} onClick={() => navigate("/workflows")}>
             <span className={styles.brandLogo}>MINIFLOW</span>
           </div>
         )}
-        <button
-          className={styles.toggleBtn}
-          onClick={() => setCollapsed(!collapsed)}
-          title={collapsed ? "Abrir sidebar" : "Cerrar sidebar"}
-        >
-          {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        <button className={styles.toggleBtn} onClick={() => actions.setCollapsed(!ui.collapsed)}>
+          {ui.collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
       </div>
 
-      {!collapsed && (
-        <div className={styles.brandSub}>{state.name || "Sin título"}</div>
-      )}
-
+      {!ui.collapsed && <div className={styles.brandSub}>{state.name || "Sin título"}</div>}
       <div className={styles.divider} />
 
-      {/* ── Scrollable content ── */}
       <div className={styles.scrollArea}>
-
-        {/* ── Nodos ── */}
-        <SectionHeader title="Nodos Disponibles" open={nodesOpen} onToggle={() => setNodesOpen(!nodesOpen)} collapsed={collapsed} />
-        <div className={`${styles.sectionBody} ${(collapsed || nodesOpen) ? styles.sectionOpen : ""}`}>
+        <SectionHeader title="Nodos Disponibles" open={ui.nodesOpen} collapsed={ui.collapsed} onToggle={() => actions.setNodesOpen(!ui.nodesOpen)} />
+        
+        <div className={`${styles.sectionBody} ${(ui.collapsed || ui.nodesOpen) ? styles.sectionOpen : ""}`}>
           <div className={styles.nodeGrid}>
-            {NODE_PALETTE.map(n => {
-              const Icon = n.icon;
-              const isStartDisabled = n.type === "start" && state.nodes.some((nd: any) => nd.type === "start");
-              return (
-                <button
-                  key={n.type}
-                  className={`${styles.nodeCard} ${collapsed ? styles.nodeCardCollapsed : ""}`}
-                  onClick={() => !isStartDisabled && handlers.addNode(n.type)}
-                  title={isStartDisabled ? "Ya existe un nodo Start" : (collapsed ? n.label : undefined)}
-                  style={isStartDisabled ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
-                  draggable={!isStartDisabled}
-                  onDragStart={e => {
-                    if (isStartDisabled) { e.preventDefault(); return; }
-                    e.dataTransfer.setData("application/miniflow-node", n.type);
-                    e.dataTransfer.effectAllowed = "copy";
-                  }}
-                >
-                  <Icon size={16} color={n.color} strokeWidth={2.2} />
-                  {!collapsed && <span>{n.label}</span>}
-                </button>
-              );
-            })}
+            {NODE_PALETTE.map(node => (
+              <NodePaletteCard key={node.type} nodeDef={node} collapsed={ui.collapsed} stateNodes={state.nodes} onAdd={handlers.addNode} />
+            ))}
           </div>
         </div>
 
-        {!collapsed && <div className={styles.divider} />}
-
-        {/* ── Resumen ── */}
-        {!collapsed && (
+        {!ui.collapsed && (
           <>
-            <SectionHeader title="Resumen" open={summaryOpen} onToggle={() => setSummaryOpen(!summaryOpen)} collapsed={collapsed} />
-            <div className={`${styles.sectionBody} ${summaryOpen ? styles.sectionOpen : ""}`}>
+            <div className={styles.divider} />
+            <SectionHeader title="Resumen" open={ui.summaryOpen} collapsed={ui.collapsed} onToggle={() => actions.setSummaryOpen(!ui.summaryOpen)} />
+            <div className={`${styles.sectionBody} ${ui.summaryOpen ? styles.sectionOpen : ""}`}>
               <div className={styles.summaryCard}>
                 <div className={styles.summaryRow}>
-                  <span>{state.nodes.length} nodos</span>
-                  <span className={styles.summaryDot}>·</span>
-                  <span>{state.edges.length} conexiones</span>
+                  <span>{state.nodes.length} nodos · {state.edges.length} conexiones</span>
                 </div>
                 <div className={styles.summaryRow}>
-                  <span className={`${styles.statusDot} ${styles[`status_${validationStatus}`]}`} />
-                  <span>{statusLabel}</span>
+                  <span className={`${styles.statusDot} ${styles[`status_${ui.validationStatus}`]}`} />
+                  <span>{ui.statusLabel}</span>
                 </div>
               </div>
             </div>
-
-            <div className={styles.divider} />
           </>
         )}
-
       </div>
 
-      {/* ── Footer ── */}
       <div className={styles.footer}>
-        <button
-          className={`${styles.backBtn} ${collapsed ? styles.backBtnCollapsed : ""}`}
-          onClick={() => navigate("/workflows")}
-          title={collapsed ? "Volver al Dashboard" : undefined}
-        >
+        <button className={`${styles.backBtn} ${ui.collapsed ? styles.backBtnCollapsed : ""}`} onClick={() => navigate("/workflows")}>
           <ArrowLeft size={14} />
-          {!collapsed && <span>Volver al Dashboard</span>}
+          {!ui.collapsed && <span>Volver al Dashboard</span>}
         </button>
       </div>
     </div>

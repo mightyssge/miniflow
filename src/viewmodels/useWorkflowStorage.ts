@@ -1,31 +1,47 @@
-import { useState } from "react";
-import { loadAll, saveAll } from "../models/storage/LocalStorage";
+import { useState, useCallback } from "react";
+import { LocalStorage } from "../models/storage/LocalStorage";
 import type { Workflow } from "../models/workflow/types";
 
 export function useWorkflowStorage() {
-  const [workflows, setWorkflows] = useState<Workflow[]>(() => {
-    const arr = loadAll().filter(w => (w?.name || "").toUpperCase() !== "WORKFLOW_2");
-    saveAll(arr);
-    return arr;
-  });
+  // Inicializamos el estado desde LocalStorage una sola vez
+  const [workflows, setWorkflows] = useState<Workflow[]>(() => LocalStorage.loadAll());
   const [currentId, setCurrentId] = useState<string | null>(() => workflows[0]?.id ?? null);
 
-  const persist = (wf: Workflow) => {
-    const next = [...workflows];
-    const idx = next.findIndex(w => w.id === wf.id);
-    if (idx >= 0) next[idx] = wf;
-    else next.unshift(wf);
-    setWorkflows(next);
-    saveAll(next);
+  // PERSIST: Guarda o actualiza un workflow
+  const persist = useCallback((wf: Workflow) => {
+    setWorkflows((prev) => {
+      const exists = prev.some(w => w.id === wf.id);
+      const next = exists 
+        ? prev.map(w => w.id === wf.id ? wf : w)
+        : [wf, ...prev];
+      
+      LocalStorage.saveAll(next);
+      return next;
+    });
     setCurrentId(wf.id);
-  };
+  }, []);
 
-  const remove = (id: string) => {
-    const next = workflows.filter(w => w.id !== id);
-    setWorkflows(next);
-    saveAll(next);
-    setCurrentId(next[0]?.id || null);
-  };
+  // REMOVE: Elimina un workflow y gestiona el ID actual
+  const remove = useCallback((id: string) => {
+    setWorkflows((prev) => {
+      const next = prev.filter(w => w.id !== id);
+      LocalStorage.saveAll(next);
+      return next;
+    });
 
-  return { workflows, currentId, setCurrentId, persist, remove };
+    // Si borramos el que estamos viendo, saltamos al primero disponible
+    setCurrentId((prevId) => {
+        if (prevId !== id) return prevId;
+        const remaining = LocalStorage.loadAll(); // Leemos el estado actualizado
+        return remaining[0]?.id || null;
+    });
+  }, []);
+
+  return { 
+    workflows, 
+    currentId, 
+    setCurrentId, 
+    persist, 
+    remove 
+  };
 }

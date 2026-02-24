@@ -1,46 +1,25 @@
-import { useState, useRef, useEffect } from "react";
-import { Handle, Position, type NodeProps } from "reactflow";
-import { Zap, MoreVertical, Pencil, Copy, Trash2 } from "lucide-react";
-import { useNodeActions } from "../NodeActionsContext";
-import type { NodeData } from "../../../models/workflow/types";
+import { Zap } from "lucide-react";
+import { type NodeProps } from "reactflow";
+import BaseNodeWrapper from "./BaseNodeWrapper";
 import base from "./BaseNode.module.css";
 
-export default function StartNode({ id, data }: NodeProps<NodeData>) {
-  const { onEdit, onDuplicate, onDelete } = useNodeActions();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+// Tipado específico para el nodo de inicio
+interface StartNodeData {
+  label: string;
+}
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
-
+export default function StartNode({ id, data }: NodeProps<StartNodeData>) {
   return (
-    <div className={base.nodeBox} style={{ borderLeft: "3px solid #28b478" }}>
-      <div className={base.nodeHeader}>
-        <div className={base.nodeTypeBadge} style={{ color: "#28b478" }}>
-          <Zap size={13} /> START
-        </div>
-        <div className={base.kebabWrap} ref={menuRef}>
-          <button className={base.kebabBtn} onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }}>
-            <MoreVertical size={14} />
-          </button>
-          {menuOpen && (
-            <div className={base.dropdown}>
-              <button className={base.dropdownItem} onClick={() => { onEdit(id); setMenuOpen(false); }}><Pencil size={13} /> Editar</button>
-              <button className={base.dropdownItem} onClick={() => { onDuplicate(id); setMenuOpen(false); }}><Copy size={13} /> Duplicar</button>
-              <button className={base.dropdownItemDanger} onClick={() => { onDelete(id); setMenuOpen(false); }}><Trash2 size={13} /> Eliminar</button>
-            </div>
-          )}
-        </div>
-      </div>
+    <BaseNodeWrapper 
+      id={id} 
+      typeLabel="START" 
+      icon={<Zap size={13} />} 
+      color="#28b478"
+      showTarget={false}  // Un nodo de inicio no recibe conexiones
+      showSource={true}   // Solo tiene salida
+    >
       <div className={base.nodeLabel}>{data.label || "Inicio"}</div>
       <div className={base.nodeHint}>1 por workflow</div>
-      <Handle type="source" position={Position.Right} />
-    </div>
+    </BaseNodeWrapper>
   );
 }
