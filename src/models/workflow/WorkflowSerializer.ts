@@ -79,7 +79,8 @@ const TYPE_MAP: Record<string, NodeType> = {
     END: "end",
     HTTP_REQUEST: "http_request",
     COMMAND: "command",
-    CONDITIONAL: "conditional"
+    CONDITIONAL: "conditional",
+    TIMER: "timer"
 }
 
 const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
@@ -87,7 +88,8 @@ const DEFAULT_POSITIONS: Record<string, { x: number; y: number }> = {
     end: { x: 1000, y: 220 },
     http_request: { x: 360, y: 220 },
     command: { x: 650, y: 220 },
-    conditional: { x: 650, y: 220 }
+    conditional: { x: 650, y: 220 },
+    timer: { x: 650, y: 350 }
 }
 
 export function deserializeWorkflow(raw: PortableWorkflow, id?: string): Workflow {

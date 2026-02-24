@@ -1,6 +1,7 @@
 package com.miniflow.factory;
 
 import com.miniflow.strategies.*;
+import com.miniflow.strategies.TimerStrategy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,12 +26,14 @@ public class ExecutorFactory {
                 case "COMMAND" -> new CommandStrategy();
                 case "CONDITIONAL" -> new ConditionalStrategy();
                 case "END" -> new EndStrategy();
+                case "TIMER" -> new TimerStrategy();
                 default -> throw new IllegalArgumentException("Unknown node type: " + key);
             };
 
             // 2. La envolvemos en el Decorador una sola vez
-            // De esta forma, cada vez que pidan "HTTP_REQUEST", 
-            // recibirán la misma instancia del decorador que envuelve a la misma estrategia.
+            // De esta forma, cada vez que pidan "HTTP_REQUEST",
+            // recibirán la misma instancia del decorador que envuelve a la misma
+            // estrategia.
             return new LoggingNodeDecorator(rawStrategy);
         });
     }

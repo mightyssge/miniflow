@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Zap, Globe, GitBranch, Terminal, Flag,
+  Zap, Globe, GitBranch, Terminal, Flag, Clock,
   ChevronDown, ChevronRight,
   ArrowLeft, PanelLeftClose, PanelLeftOpen
 } from "lucide-react";
@@ -13,6 +13,7 @@ const NODE_PALETTE = [
   { type: "http_request" as NodeType, label: "HTTP Request", icon: Globe, color: "#78b4ff" },
   { type: "conditional" as NodeType, label: "Condicional", icon: GitBranch, color: "#f5a623" },
   { type: "command" as NodeType, label: "Comando", icon: Terminal, color: "#a78bfa" },
+  { type: "timer" as NodeType, label: "Timer", icon: Clock, color: "#60a5fa" },
   { type: "end" as NodeType, label: "Fin", icon: Flag, color: "#d23750" },
 ];
 

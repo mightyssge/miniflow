@@ -1,6 +1,6 @@
 import type { Node, Edge } from "reactflow"
 
-export type NodeType = "start" | "http_request" | "conditional" | "command" | "end"
+export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer"
 
 export type ErrorPolicy = "STOP_ON_FAIL" | "CONTINUE_ON_FAIL"
 
@@ -39,10 +39,16 @@ export interface ConditionalConfig {
   errorPolicy?: ErrorPolicy
 }
 
+export interface TimerConfig {
+  delay: number
+  unit: "ms" | "s" | "min"
+}
+
 export type NodeConfig =
   | CommandConfig
   | HttpRequestConfig
   | ConditionalConfig
+  | TimerConfig
   | Record<string, never>
 
 export interface NodeData {

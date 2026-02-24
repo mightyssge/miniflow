@@ -16,7 +16,8 @@ export const defaultConfigByType: Record<NodeType, Record<string, unknown>> = {
   conditional: {
     condition: "context.status == 200"
   },
-  command: { command: "", scriptPath: "", args: "", outputKey: "" }
+  command: { command: "", scriptPath: "", args: "", outputKey: "" },
+  timer: { delay: 3, unit: "s" }
 }
 
 export const emptyWorkflow = (): Workflow => ({
@@ -40,7 +41,9 @@ export const makeNode = (
           ? "Consultar API"
           : type === "conditional"
             ? "Evaluar respuesta"
-            : "Ejecutar comando"
+            : type === "timer"
+              ? "Temporizador"
+              : "Ejecutar comando"
 
   const node: FlowNode = {
     id: uid(),
