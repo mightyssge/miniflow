@@ -19,6 +19,7 @@ export function useWorkflowEditorController(
     const [importOpen, setImportOpen] = useState(false);
     const [importJson, setImportJson] = useState("");
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
     const [pillTab, setPillTab] = useState<"steps" | "terminal">("steps");
     const [timelineStep, setTimelineStep] = useState<any>(null);
 
@@ -78,6 +79,7 @@ export function useWorkflowEditorController(
             importOpen,
             importJson,
             deleteOpen,
+            historyOpen,
             pillTab,
             timelineStep,
         },
@@ -85,6 +87,7 @@ export function useWorkflowEditorController(
             setImportJson,
             setPillTab,
             setTimelineStep,
+            setHistoryOpen,
         },
         io: {
             onFileChange,

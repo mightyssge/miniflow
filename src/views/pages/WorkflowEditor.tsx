@@ -14,6 +14,7 @@ import { NodeConfigModal } from "../components/NodeConfigModal";
 import ValidationPanel from "../components/ValidationPanel";
 import { ImportWorkflowModal } from "../components/modals/ImportWorkflowModal";
 import { DeleteWorkflowModal } from "../components/modals/DeleteWorkflowModal";
+import { RunHistoryModal } from "../components/modals/RunHistoryModal";
 import styles from "./WorkflowEditor.module.css";
 
 function EditorInner() {
@@ -46,7 +47,7 @@ function EditorInner() {
                 <WorkflowHeader
                     name={state.current?.name || "Sin Nombre"}
                     lastRunAt={state.current?.lastRunAt}
-                    handlers={handlers}
+                    handlers={{ ...handlers, setHistoryOpen: uiSetters.setHistoryOpen }}
                     serializeAndCopy={uiHandlers.handleSerializeAndCopy}
                     serializeAndDownload={uiHandlers.handleSerializeAndDownload}
                     handleFileUpload={io.onFileChange}
@@ -103,16 +104,23 @@ function EditorInner() {
             )}
             {uiState.deleteOpen && (
                 <DeleteWorkflowModal
-                    workflowName={state.current?.name || "Sin Nombre"}
+                    workflowName={state.current?.name || ""}
                     onClose={uiHandlers.handleCloseDeleteModal}
                     onConfirm={uiHandlers.handleConfirmDelete}
+                />
+            )}
+            {uiState.historyOpen && (
+                <RunHistoryModal
+                    workflowId={state.current?.id || ""}
+                    onClose={() => uiSetters.setHistoryOpen(false)}
+                    onLoadRun={handlers.loadPastRun}
                 />
             )}
         </div>
     );
 }
 
-export default function WorkflowEditor() {
+export function WorkflowEditor() {
     return (
         <ReactFlowProvider>
             <EditorInner />

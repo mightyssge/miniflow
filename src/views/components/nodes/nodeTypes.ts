@@ -4,6 +4,7 @@ import HttpRequestNode from "./HttpRequestNode"
 import ConditionalNode from "./ConditionalNode"
 import EndNode from "./EndNode"
 import TimerNode from "./TimerNode"
+import ParallelNode from "./ParallelNode"
 
 export const nodeTypes = {
   start: StartNode,
@@ -11,5 +12,6 @@ export const nodeTypes = {
   conditional: ConditionalNode,
   command: CommandNode,
   end: EndNode,
-  timer: TimerNode
+  timer: TimerNode,
+  parallel: ParallelNode
 }

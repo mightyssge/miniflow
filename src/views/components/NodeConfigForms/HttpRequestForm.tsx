@@ -63,6 +63,21 @@ export function HttpRequestForm({ config, isReadOnly, patchConfig, patchMap }: P
                 </div>
             </div>
 
+            <div className={styles.row2}>
+                <div className={styles.field}>
+                    <label>Política de error</label>
+                    <CustomSelect
+                        value={config.errorPolicy || "STOP_ON_FAIL"}
+                        onChange={v => !isReadOnly && patchConfig("errorPolicy", v)}
+                        options={[
+                            { value: "STOP_ON_FAIL", label: "STOP_ON_FAIL" },
+                            { value: "CONTINUE_ON_FAIL", label: "CONTINUE_ON_FAIL" },
+                        ]}
+                        disabled={isReadOnly}
+                    />
+                </div>
+            </div>
+
             <div className={styles.sectionLabel}>Mapeo de Respuesta</div>
 
             <div className={styles.row2}>

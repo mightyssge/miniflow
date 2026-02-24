@@ -1,6 +1,6 @@
 import type { Node, Edge } from "reactflow"
 
-export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer"
+export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer" | "parallel"
 export type ErrorPolicy = "STOP_ON_FAIL" | "CONTINUE_ON_FAIL"
 
 /* ── 1. Eliminando Data Clumps: Encapsulamos la expresión condicional ── */
@@ -50,11 +50,12 @@ export interface TimerConfig {
 
 /* ── 3. Eliminando Switch Statements (Discriminated Union) ── */
 // Ahora el compilador SABRÁ que si el tipo es 'command', la config es CommandConfig
-export type FlowNode = 
+export type FlowNode =
   | Node<{ label: string; config: CommandConfig }, 'command'>
   | Node<{ label: string; config: HttpRequestConfig }, 'http_request'>
   | Node<{ label: string; config: ConditionalConfig }, 'conditional'>
   | Node<{ label: string; config: TimerConfig }, 'timer'>
+  | Node<{ label: string; config: Record<string, never> }, 'parallel'>
   | Node<{ label: string; config: Record<string, never> }, 'start' | 'end'>
 
 export type FlowEdge = Edge

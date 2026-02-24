@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
     Save, CheckCircle, Play, Download,
-    Trash2, Clipboard, ChevronDown
+    Trash2, Clipboard, ChevronDown, List
 } from "lucide-react";
 import styles from "../../pages/WorkflowEditor.module.css";
 
@@ -62,6 +62,9 @@ export function WorkflowHeader({
                 </button>
                 <button className={`${styles.tbBtn} ${styles.tbExecute}`} onClick={handlers.executeNow} title="Ejecutar">
                     <Play size={15} /> Ejecutar
+                </button>
+                <button className={`${styles.tbBtn} ${styles.tbSubtle}`} onClick={() => handlers.setHistoryOpen(true)} title="Historial">
+                    <List size={15} /> Historial
                 </button>
 
                 <div className={styles.tbSep} />

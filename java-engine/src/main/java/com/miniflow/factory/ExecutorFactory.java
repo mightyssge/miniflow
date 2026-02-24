@@ -25,6 +25,7 @@ public class ExecutorFactory {
                 case "HTTP_REQUEST" -> new HttpRequestStrategy();
                 case "COMMAND" -> new CommandStrategy();
                 case "CONDITIONAL" -> new ConditionalStrategy();
+                case "PARALLEL" -> new ParallelStrategy();
                 case "END" -> new EndStrategy();
                 case "TIMER" -> new TimerStrategy();
                 default -> throw new IllegalArgumentException("Unknown node type: " + key);

@@ -45,7 +45,7 @@ public class HttpRequestStrategy implements NodeExecutor {
             ctx.setVariable("lastResponse", Map.of("status_code", status, "response", parsedBody));
         }
 
-        if (HttpHelper.isError(status) && "STOP".equalsIgnoreCase(TypeConverter.asString(cfg.get("errorPolicy")))) {
+        if (HttpHelper.isError(status)) {
             throw new Exception("HTTP Error " + status);
         }
     }

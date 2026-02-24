@@ -8,7 +8,7 @@ import { useToast } from "../contexts/ToastContext";
 
 export function useWorkflowViewModel(initialId?: string) {
   const { workflows, currentId, setCurrentId, persist, remove } = useWorkflowStorage();
-  const { runStatus, runResult, run } = useWorkflowExecution();
+  const { runStatus, runResult, run, loadPastRun } = useWorkflowExecution();
   const { showToast } = useToast();
 
   // Usamos el initialId para establecer el workflow activo al montar el componente
@@ -100,10 +100,12 @@ export function useWorkflowViewModel(initialId?: string) {
     setEditingNodeId: setSelectedNodeId,
     updateNodeById,
     duplicateNode,
-    deleteNode
+    deleteNode,
+    loadPastRun
   };
 
   return {
+    loadPastRun,
     state: { nodes, edges, current, runStatus, runResult, validationReport, selectedNodeId },
     handlers
   };

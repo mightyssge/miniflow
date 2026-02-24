@@ -33,9 +33,18 @@ public class CommandStrategy implements NodeExecutor {
         List<String> wrapper = OSUtils.isWindows() ? List.of("cmd", "/c", fullCmd) : List.of("bash", "-lc", fullCmd);
 
         Process process = new ProcessBuilder(wrapper).start();
+
+        long timeoutMs = TypeConverter.asInt(cfg.get("timeoutMs"), 30000);
+        boolean finished = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        if (!finished) {
+            process.destroyForcibly();
+            throw new Exception("Command Execution Time Out Exceeded (" + timeoutMs + "ms)");
+        }
+
         String stdout = OSUtils.readStream(process.getInputStream());
         String stderr = OSUtils.readStream(process.getErrorStream());
-        int exitCode = process.waitFor();
+        int exitCode = process.exitValue();
 
         // 1. Guardamos la salida técnica en NodeOutput (específico para el modal de la
         // UI y el Log)

@@ -1,7 +1,7 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { Landing } from "./views/pages/Landing";
 import { Dashboard } from "./views/pages/Dashboard";
-import WorkflowEditor from "./views/pages/WorkflowEditor";
+import { WorkflowEditor } from "./views/pages/WorkflowEditor";
 import { ToastProvider } from "./contexts/ToastContext";
 
 export default function App() {
