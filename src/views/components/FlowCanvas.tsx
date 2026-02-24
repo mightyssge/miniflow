@@ -10,7 +10,7 @@ interface FlowCanvasProps {
     nodeActions: any;
     onDragOver: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent) => void;
-    wrapperRef: React.RefObject<HTMLDivElement>;
+    wrapperRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function FlowCanvas({
@@ -23,7 +23,7 @@ export function FlowCanvas({
 }: FlowCanvasProps) {
     return (
         <main className="miniflow-canvas-wrap" ref={wrapperRef} style={{ flex: 1, position: 'relative' }}>
-            <NodeActionsProvider value={nodeActions}>
+            <NodeActionsProvider actions={nodeActions}>
                 <ReactFlow
                     nodes={state.nodes}
                     edges={state.edges}

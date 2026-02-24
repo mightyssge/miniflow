@@ -1,5 +1,5 @@
 import { AlertCircle, AlertTriangle, Info } from "lucide-react";
-import styles from "./ValidationPanel.module.css";
+import styles from "../ValidationPanel.module.css";
 import { type ValidationSeverity } from "../../../models/workflow/types";
 
 export const SEVERITY_MAP: Record<ValidationSeverity, { icon: any; cls: string; label: string }> = {

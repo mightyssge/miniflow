@@ -1,8 +1,8 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
-import { MoreVertical, Pencil, Trash2, Plus, Zap, ArrowLeftRight, Clock, Package } from "lucide-react";
-import { loadAll, saveAll } from "../../models/storage/LocalStorage";
-import { emptyWorkflow } from "../../models/workflow/WorkflowFactory";
+import { useState } from "react";
+import { Plus, Zap, ArrowLeftRight, Clock, Package } from "lucide-react";
+import { LocalStorage } from "../../models/storage/LocalStorage";
+import { createEmptyWorkflow } from "../../models/workflow/WorkflowFactory";
 import type { Workflow } from "../../models/workflow/types";
 import styles from "./Dashboard.module.css";
 
@@ -27,15 +27,15 @@ import { KebabMenu } from "../components/common/KebabMenu";
 
 export function Dashboard() {
     const navigate = useNavigate();
-    const [workflows, setWorkflows] = useState<Workflow[]>(() => loadAll());
+    const [workflows, setWorkflows] = useState<Workflow[]>(() => LocalStorage.loadAll());
     const [showCreate, setShowCreate] = useState(false);
     const [deletingWf, setDeletingWf] = useState<Workflow | null>(null);
     const [editingWf, setEditingWf] = useState<Workflow | null>(null);
 
     const handleCreate = (name: string, desc: string) => {
-        const wf = { ...emptyWorkflow(), name, description: desc };
+        const wf = { ...createEmptyWorkflow(name), description: desc };
         const next = [wf, ...workflows];
-        saveAll(next);
+        LocalStorage.saveAll(next);
         setWorkflows(next);
         navigate(`/editor/${wf.id}`);
     };
@@ -43,7 +43,7 @@ export function Dashboard() {
     const handleDelete = () => {
         if (!deletingWf) return;
         const next = workflows.filter(w => w.id !== deletingWf.id);
-        saveAll(next);
+        LocalStorage.saveAll(next);
         setWorkflows(next);
         setDeletingWf(null);
     };
@@ -53,7 +53,7 @@ export function Dashboard() {
         const next = workflows.map(w =>
             w.id === editingWf.id ? { ...w, name, description: desc } : w
         );
-        saveAll(next);
+        LocalStorage.saveAll(next);
         setWorkflows(next);
         setEditingWf(null);
     };

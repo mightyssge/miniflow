@@ -45,7 +45,7 @@ function EditorInner() {
             <div className={styles.main}>
                 <WorkflowHeader
                     name={state.current?.name || "Sin Nombre"}
-                    lastSavedAt={state.current?.lastSavedAt}
+                    lastRunAt={state.current?.lastRunAt}
                     handlers={handlers}
                     serializeAndCopy={uiHandlers.handleSerializeAndCopy}
                     serializeAndDownload={uiHandlers.handleSerializeAndDownload}
@@ -84,9 +84,9 @@ function EditorInner() {
                 />
             </div>
 
-            {state.editingNodeId && (
+            {state.selectedNodeId && (
                 <NodeConfigModal
-                    node={state.nodes.find((n: any) => n.id === state.editingNodeId)}
+                    node={state.nodes.find((n: any) => n.id === state.selectedNodeId)}
                     execStep={uiState.timelineStep}
                     initialTab={uiState.timelineStep ? "output" : "parameters"}
                     onSave={handlers.updateNodeById}

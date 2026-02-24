@@ -1,7 +1,8 @@
 import { useRef, useCallback } from "react";
 import { WorkflowExporters } from "../models/workflow/WorkflowExporters";
 import { validate } from "../models/workflow/WorkflowValidator";
-import { deserializeWorkflow, serializeWorkflow } from "../models/workflow/WorkflowSerializer";
+import { serializeWorkflow } from "../models/workflow/WorkflowSerializer";
+import { deserializeWorkflow } from "../models/workflow/WorkflowDeserializer";
 import type { Workflow } from "../models/workflow/types";
 
 export function useWorkflowIO(onImportSuccess: (wf: Workflow) => void) {

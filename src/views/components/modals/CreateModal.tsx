@@ -1,5 +1,5 @@
 import { useState } from "react";
-import styles from "../pages/Dashboard.module.css";
+import styles from "../../pages/Dashboard.module.css";
 
 export function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string, desc: string) => void }) {
     const [name, setName] = useState("");

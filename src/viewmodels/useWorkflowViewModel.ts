@@ -72,6 +72,7 @@ export function useWorkflowViewModel(initialId?: string) {
     addNode: (type: any, position?: any) => setNodes(nds => nds.concat(makeNode(type, position || { x: 150, y: 150 }))),
     validate: () => setValidationReport(validate(nodes as any, edges)),
     validateNow: () => setValidationReport(validate(nodes as any, edges)), // Alias
+    closeValidation: () => setValidationReport(null),
     execute: async () => {
       const report = validate(nodes as any, edges);
       setValidationReport(report);

@@ -198,8 +198,19 @@
 }
 
 .dropdownItemDanger {
-    composes: dropdownItem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 500;
     color: #ff9999;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s;
 }
 
 .dropdownItemDanger:hover {
