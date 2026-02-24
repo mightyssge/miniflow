@@ -39,7 +39,10 @@ export function useWorkflowEditorController(
     }), [handlers]);
 
     /* ── Modals & UI Handlers ── */
-    const handleSerializeAndCopy = useCallback(() => copyToClipboard(state, handlers), [copyToClipboard, state, handlers]);
+    const handleSerializeAndCopy = useCallback(async () => {
+        await copyToClipboard(state, handlers);
+        showToast("JSON copiado al portapapeles");
+    }, [copyToClipboard, state, handlers, showToast]);
     const handleSerializeAndDownload = useCallback(() => downloadJsonFile(state, handlers), [downloadJsonFile, state, handlers]);
     const handleDeleteRequest = useCallback(() => setDeleteOpen(true), []);
     const handleImportTextRequest = useCallback(() => { setImportJson(""); setImportOpen(true); }, []);

@@ -38,7 +38,7 @@ export function useWorkflowIO(onImportSuccess: (wf: Workflow) => void) {
 
   const downloadJsonFile = useCallback((state: any, handlers: any) => {
     handlers.saveCurrent();
-    const data = { id: state.currentId, name: state.name, description: state.description, nodes: state.nodes, edges: state.edges };
+    const data = { id: state.current?.id, name: state.current?.name, description: state.current?.description, nodes: state.nodes, edges: state.edges };
     const portable = serializeWorkflow(data as any);
     const blob = new Blob([JSON.stringify(portable, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -49,11 +49,11 @@ export function useWorkflowIO(onImportSuccess: (wf: Workflow) => void) {
     URL.revokeObjectURL(url);
   }, []);
 
-  const copyToClipboard = useCallback((state: any, handlers: any) => {
+  const copyToClipboard = useCallback(async (state: any, handlers: any) => {
     handlers.saveCurrent();
-    const data = { id: state.currentId, name: state.name, description: state.description, nodes: state.nodes, edges: state.edges };
+    const data = { id: state.current?.id, name: state.current?.name, description: state.current?.description, nodes: state.nodes, edges: state.edges };
     const portable = serializeWorkflow(data as any);
-    navigator.clipboard.writeText(JSON.stringify(portable, null, 2));
+    await navigator.clipboard.writeText(JSON.stringify(portable, null, 2));
   }, []);
 
   return {

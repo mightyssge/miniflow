@@ -2,6 +2,8 @@
 import styles from "../../pages/WorkflowEditor.module.css";
 import { useToast } from "../../../contexts/ToastContext";
 
+import { deserializeWorkflow } from "../../../models/workflow/WorkflowDeserializer";
+
 interface ImportWorkflowModalProps {
     importJson: string;
     setImportJson: (val: string) => void;
@@ -34,7 +36,8 @@ export function ImportWorkflowModal({ importJson, setImportJson, onClose, onImpo
                                     showToast("JSON inválido — debe tener un array 'nodes'");
                                     return;
                                 }
-                                onImport(obj.nodes, obj.edges || []);
+                                const wf = deserializeWorkflow(obj);
+                                onImport(wf.nodes, wf.edges || []);
                                 onClose();
                                 showToast("Workflow importado exitosamente");
                             } catch {

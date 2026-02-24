@@ -4,10 +4,12 @@ import { useWorkflowStorage } from "./useWorkflowStorage";
 import { useWorkflowExecution } from "./useWorkflowExecution";
 import { validate } from "../models/workflow/WorkflowValidator";
 import { makeNode } from "../models/workflow/WorkflowFactory";
+import { useToast } from "../contexts/ToastContext";
 
 export function useWorkflowViewModel(initialId?: string) {
   const { workflows, currentId, setCurrentId, persist, remove } = useWorkflowStorage();
   const { runStatus, runResult, run } = useWorkflowExecution();
+  const { showToast } = useToast();
 
   // Usamos el initialId para establecer el workflow activo al montar el componente
   useEffect(() => {
@@ -36,6 +38,8 @@ export function useWorkflowViewModel(initialId?: string) {
   const getSnapshot = () => ({
     id: currentId || crypto.randomUUID(),
     name: current?.name || "WORKFLOW",
+    description: current?.description || "",
+    lastRunAt: new Date().toISOString(),
     nodes,
     edges
   });
@@ -66,8 +70,8 @@ export function useWorkflowViewModel(initialId?: string) {
     onNodesChange,
     onEdgesChange,
     onConnect: (params: any) => setEdges(eds => addEdge({ ...params, type: 'smoothstep' }, eds)),
-    save: () => persist(getSnapshot() as any),
-    saveCurrent: () => persist(getSnapshot() as any), // Alias
+    save: () => { persist(getSnapshot() as any); showToast("Workflow guardado correctamente"); },
+    saveCurrent: () => { persist(getSnapshot() as any); showToast("Workflow guardado correctamente"); }, // Alias
     deleteCurrent: () => currentId && remove(currentId),
     addNode: (type: any, position?: any) => setNodes(nds => nds.concat(makeNode(type, position || { x: 150, y: 150 }))),
     validate: () => setValidationReport(validate(nodes as any, edges)),

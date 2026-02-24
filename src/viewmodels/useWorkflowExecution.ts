@@ -7,16 +7,19 @@ export function useWorkflowExecution() {
 
   const run = async (workflow: any) => {
     setRunStatus("running");
+    const startTime = Date.now();
     try {
       const res = await window.electronAPI.runWorkflow(JSON.stringify(workflow));
+      const duration = Date.now() - startTime;
       const steps = parseJavaExecutionLogs(res.stdout || "", workflow.nodes);
       const hasErrors = steps.some(s => s.status === "ERROR") || !res.ok;
-      
+
       setRunResult({
         status: hasErrors ? "FAILED" : "SUCCESS",
         steps,
         rawStdout: res.stdout,
-        exitCode: res.exitCode
+        exitCode: res.exitCode,
+        duration
       });
       setRunStatus(hasErrors ? "error" : "success");
     } catch (e) {
