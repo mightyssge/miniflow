@@ -32,14 +32,15 @@ public class LoggingNodeDecorator implements NodeExecutor {
 
             // 2. Snapshot de salida filtrado
             Map<String, Object> outputState = filterInternalVars(context.getVariables());
-            
+
             // 3. Obtener los detalles técnicos (el canal privado)
             Object nodeDetails = context.getNodeOutput(node.getId());
 
             System.out.println("[JAVA-STDOUT]:    OUTPUT DATA -->: " + LogUtils.formatMapForLog(outputState));
-            
+
             if (nodeDetails instanceof Map) {
-                System.out.println("[JAVA-STDOUT]:    NODE_EXEC_DETAILS -->: " + LogUtils.formatMapForLog((Map<String, Object>) nodeDetails));
+                System.out.println("[JAVA-STDOUT]:    NODE_EXEC_DETAILS -->: "
+                        + LogUtils.formatMapForLog((Map<String, Object>) nodeDetails));
             }
 
             System.out.println("[JAVA-STDOUT]: ");
@@ -58,7 +59,8 @@ public class LoggingNodeDecorator implements NodeExecutor {
      * Filtra el mapa para ocultar variables de sistema que empiezan con __
      */
     private Map<String, Object> filterInternalVars(Map<String, Object> variables) {
-        if (variables == null) return new HashMap<>();
+        if (variables == null)
+            return new HashMap<>();
         return variables.entrySet().stream()
                 .filter(entry -> !entry.getKey().startsWith("__"))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
