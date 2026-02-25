@@ -15,46 +15,46 @@ public class LoggingNodeDecorator implements NodeExecutor {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void execute(Node node, ExecutionContext context) throws Exception {
         long startTime = System.currentTimeMillis();
-        // 1. Filtrar variables internas (__branch, __startTime, etc.)
-        // Esto asegura que el usuario solo vea SUS datos.
-        Map<String, Object> inputState = filterInternalVars(context.getVariables());
-
-        System.out.println("[JAVA-STDOUT]: ======================");
-        System.out.println("[JAVA-STDOUT]: Nodo: " + node.getId() + " [" + node.getType().toUpperCase() + "]");
-        System.out.println("[JAVA-STDOUT]:    -> INPUT DATA: " + LogUtils.formatMapForLog(inputState));
-        System.out.println("[JAVA-STDOUT]:    -> CONFIG: " + LogUtils.formatMapForLog(node.getConfig()));
-        System.out.println("[JAVA-STDOUT]: ");
+        
+        // Todo el bloque de impresión debe ser atómico
+        synchronized (System.out) {
+            Map<String, Object> inputState = filterInternalVars(context.getVariables());
+            System.out.println("[JAVA-STDOUT]: ======================");
+            System.out.println("[JAVA-STDOUT]: Nodo: " + node.getId() + " [" + node.getType().toUpperCase() + "]");
+            System.out.println("[JAVA-STDOUT]:    -> INPUT DATA: " + LogUtils.formatMapForLog(inputState));
+            System.out.println("[JAVA-STDOUT]:    -> CONFIG: " + LogUtils.formatMapForLog(node.getConfig()));
+            System.out.println("[JAVA-STDOUT]: ");
+        }
 
         try {
             wrapped.execute(node, context);
 
-            // 2. Snapshot de salida filtrado
-            Map<String, Object> outputState = filterInternalVars(context.getVariables());
+            synchronized (System.out) {
+                Map<String, Object> outputState = filterInternalVars(context.getVariables());
+                Object nodeDetails = context.getNodeOutput(node.getId());
 
-            // 3. Obtener los detalles técnicos (el canal privado)
-            Object nodeDetails = context.getNodeOutput(node.getId());
-
-            System.out.println("[JAVA-STDOUT]:    OUTPUT DATA -->: " + LogUtils.formatMapForLog(outputState));
-
-            if (nodeDetails instanceof Map) {
-                System.out.println("[JAVA-STDOUT]:    NODE_EXEC_DETAILS -->: "
+                System.out.println("[JAVA-STDOUT]:    OUTPUT DATA -->: " + LogUtils.formatMapForLog(outputState));
+                if (nodeDetails instanceof Map) {
+                    System.out.println("[JAVA-STDOUT]:    NODE_EXEC_DETAILS -->: " 
                         + LogUtils.formatMapForLog((Map<String, Object>) nodeDetails));
+                }
+                System.out.println("[JAVA-STDOUT]: ");
+                System.out.println("[JAVA-STDOUT]: Resultado --> OK");
             }
-
-            System.out.println("[JAVA-STDOUT]: ");
-            System.out.println("[JAVA-STDOUT]: Resultado --> OK");
-
         } catch (Exception e) {
-            String errorDetail = (e.getMessage() != null) ? e.getMessage() : e.toString();
-            System.out.println("[JAVA-STDOUT]:    Resultado: ERROR --> " + errorDetail.replace("\n", " "));
+            synchronized (System.out) {
+                String errorDetail = (e.getMessage() != null) ? e.getMessage() : e.toString();
+                System.out.println("[JAVA-STDOUT]:    Resultado: ERROR --> " + errorDetail.replace("\n", " "));
+            }
             throw e;
         } finally {
-            long durationMs = System.currentTimeMillis() - startTime;
-            System.out.println("[JAVA-STDOUT]:    DURATION -->: " + durationMs + "ms");
-            System.out.println("[JAVA-STDOUT]: ======================");
+            synchronized (System.out) {
+                long durationMs = System.currentTimeMillis() - startTime;
+                System.out.println("[JAVA-STDOUT]:    DURATION -->: " + durationMs + "ms");
+                System.out.println("[JAVA-STDOUT]: ======================");
+            }
         }
     }
 

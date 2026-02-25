@@ -9,75 +9,60 @@ import com.miniflow.model.Workflow;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CompletableFuture; 
+import java.util.concurrent.ExecutorService;    
+import java.util.concurrent.Executors;          
 import java.util.stream.Collectors;
 
-/**
- * Especialista concurrente que divide el flujo del motor en varios hilos
- * Fire-And-Forget.
- */
 public class ParallelStrategy implements NodeExecutor {
 
-    // Pool de hilos estático para evitar fugas de memoria por demasiados procesos
-    // encolados
-    private static final ExecutorService PARALLEL_POOL = Executors.newCachedThreadPool();
+    // ThreadPool con hilos Daemon para no bloquear el cierre de la JVM
+    private static final ExecutorService PARALLEL_POOL = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r);
+        t.setDaemon(true); 
+        return t;
+    });
 
     @Override
     public void execute(Node node, ExecutionContext context) throws Exception {
-        // En lugar de iterar por un forEach, ramificaremos topológicamente
-
         Object scopeObj = context.getVariable("__workflowScope");
         if (!(scopeObj instanceof Workflow)) {
-            throw new RuntimeException("No se encontró el Scope del Workflow para procesar el paralelismo");
+            throw new RuntimeException("No se encontró el Scope del Workflow");
         }
 
         Workflow workflow = (Workflow) scopeObj;
 
-        // Buscamos TODOS los cables que salen explícitamente desde este PARALLEL
         List<Connection> outEdges = workflow.edges.stream()
                 .filter(e -> e.source != null && e.source.equals(node.id))
                 .collect(Collectors.toList());
 
         if (outEdges.isEmpty()) {
-            context.setNodeOutput(node.id,
-                    Map.of("success", true, "message", "PARALLEL sin ramas de salida. Finalizando rama."));
+            context.setNodeOutput(node.id, Map.of("success", true, "message", "No hay ramas"));
             return;
         }
 
-        // Para cada cable saliente...
-        for (Connection edge : outEdges) {
+        // Crear las tareas asíncronas
+        List<CompletableFuture<Void>> branchTasks = outEdges.stream().map(edge -> 
+            CompletableFuture.runAsync(() -> {
+                try {
+                    Optional<Node> targetNodeOpt = workflow.nodes.stream()
+                            .filter(n -> n.id.equals(edge.target))
+                            .findFirst();
 
-            // 1. Encontrar cuál es ese nodo destino (recordemos que según validación,
-            // forzosamente conectará a un nodo, y ese nodo a un END)
-            Optional<Node> targetNodeOpt = workflow.nodes.stream()
-                    .filter(n -> n.id.equals(edge.target))
-                    .findFirst();
-
-            if (targetNodeOpt.isPresent()) {
-                Node branchTarget = targetNodeOpt.get();
-
-                // 2. Clonamos limpiamente la memoria ramificada en este microsegundo (Deep-ish
-                // copy del Thread Safe Map)
-                ExecutionContext branchContext = context.cloneContext();
-
-                // 3. Disparamos la nueva bifurcación en hilo oculto Fire-And-Forget
-                PARALLEL_POOL.submit(() -> {
-                    try {
-                        WorkflowRunner branchRunner = new WorkflowRunner();
-                        // Ejecuta independientemente y no retorna nada al main. (Silencioso).
-                        branchRunner.runFromNode(workflow, branchTarget, branchContext);
-                    } catch (Exception e) {
-                        System.err.println(
-                                "[PARALLEL-ERROR] Falló una rama asíncrona (" + edge.target + "): " + e.getMessage());
+                    if (targetNodeOpt.isPresent()) {
+                        ExecutionContext branchContext = context.cloneContext();
+                        // Nueva instancia de runner para ejecución aislada
+                        new WorkflowRunner().runFromNode(workflow, targetNodeOpt.get(), branchContext);
                     }
-                });
-            }
-        }
+                } catch (Exception e) {
+                    System.err.println("[PARALLEL-ERROR]: " + e.getMessage());
+                }
+            }, PARALLEL_POOL)
+        ).collect(Collectors.toList());
 
-        // Finalizamos al instante en el hilo inicial (Padre) devolviendo Control
-        // SUCCESS (Fire and forget).
-        // ReactFlow marcará el nodo PARALLEL en verde al terminar esta línea
+        // Esperar a que todas las ramas terminen su recorrido
+        CompletableFuture.allOf(branchTasks.toArray(new CompletableFuture[0])).join();
+
         context.setNodeOutput(node.id, Map.of("success", true, "branches_dispatched", outEdges.size()));
     }
 }

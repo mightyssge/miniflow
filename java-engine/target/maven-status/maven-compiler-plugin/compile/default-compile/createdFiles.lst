@@ -19,6 +19,7 @@ com\miniflow\strategies\CommandStrategy.class
 com\miniflow\strategies\ExecutionResult.class
 com\miniflow\model\Node.class
 com\miniflow\strategies\ConditionalStrategy.class
+com\miniflow\strategies\ParallelStrategy.class
 com\miniflow\utils\ExpressionEvaluator.class
 com\miniflow\strategies\StartStrategy.class
 com\miniflow\model\Connection.class
