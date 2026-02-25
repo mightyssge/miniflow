@@ -4,16 +4,18 @@ import { useState } from "react";
 import { EngineStatusIcon, EngineStatusLabel } from "./EngineStatusIcon";
 import { StepsTimeline } from "./EngineStatusViews";
 
+import type { WorkflowExecutionResult, MiniflowNode, ExecutionStep } from "../../../models/workflow/coreTypes";
+
 interface EngineStatusPillProps {
     runStatus: "idle" | "running" | "success" | "error";
-    runResult: any;
+    runResult: WorkflowExecutionResult | null;
     runStdout: string;
     runStderr: string;
     pillTab: "steps" | "terminal";
     setPillTab: (tab: "steps" | "terminal") => void;
     executeNow: () => void;
-    nodes: any[];
-    setTimelineStep: (step: any) => void;
+    nodes: MiniflowNode[];
+    setTimelineStep: (step: ExecutionStep) => void;
     setEditingNodeId: (id: string | null) => void;
 }
 
@@ -81,7 +83,7 @@ export function EngineStatusPill({
 
                     {pillTab === 'steps' && (
                         <StepsTimeline
-                            steps={runResult?.steps}
+                            steps={runResult?.steps || []}
                             nodes={nodes}
                             setTimelineStep={setTimelineStep}
                             setEditingNodeId={setEditingNodeId}

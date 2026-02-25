@@ -8,17 +8,21 @@ public class JsonUtils {
 
     public static Object tryParse(String body) {
         try {
-            if (body == null || body.isBlank()) return null;
+            if (body == null || body.isBlank())
+                return null;
             return mapper.readValue(body, Object.class);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            System.err.println("[JsonUtils - tryParse] Error deserializing JSON body: " + e.getMessage());
             return null;
         }
     }
 
     public static Object extractByPath(Object parsed, String path) {
-        if (parsed == null || path == null || path.isBlank()) return null;
-        if (path.startsWith("$.")) path = path.substring(2);
-        
+        if (parsed == null || path == null || path.isBlank())
+            return null;
+        if (path.startsWith("$."))
+            path = path.substring(2);
+
         String[] parts = path.split("\\.");
         Object current = parsed;
 

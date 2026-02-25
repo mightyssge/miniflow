@@ -87,7 +87,7 @@ function EditorInner() {
 
             {state.selectedNodeId && (
                 <NodeConfigModal
-                    node={state.nodes.find((n: any) => n.id === state.selectedNodeId)}
+                    node={(state.nodes.find(n => n.id === state.selectedNodeId) as any) || null}
                     execStep={uiState.timelineStep}
                     initialTab={uiState.timelineStep ? "output" : "parameters"}
                     onSave={handlers.updateNodeById}

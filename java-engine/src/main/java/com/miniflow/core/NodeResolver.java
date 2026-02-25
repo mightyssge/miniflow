@@ -34,27 +34,13 @@ public class NodeResolver {
         // este join
         // para continuar el flujo, comportándose ahora como el Main Thread.
 
-        String branch = null;
-        if ("CONDITIONAL".equalsIgnoreCase(current.type)) {
-            // Buscamos en el Output específico del nodo, no en el contexto global
-            Object nodeOutput = context.getNodeOutput(current.id);
-            if (nodeOutput instanceof Map) {
-                Map<?, ?> details = (Map<?, ?>) nodeOutput;
-                // Extraemos el branch que guardó la ConditionalStrategy
-                Object b = details.get("selectedBranch");
-                if (b != null)
-                    branch = String.valueOf(b);
-            }
-        }
+        String branch = getBranchFlag(current, context);
 
-        final String finalBranch = branch;
-
-        // Búsqueda del Edge (Conexión)
         Optional<Connection> edge = workflow.edges.stream()
                 .filter(e -> e.source != null && e.source.equals(current.id))
-                .filter(e -> finalBranch == null ||
-                        (e.label != null && e.label.equalsIgnoreCase(finalBranch)) ||
-                        (e.sourceHandle != null && e.sourceHandle.equalsIgnoreCase(finalBranch)))
+                .filter(e -> branch == null ||
+                        (e.label != null && e.label.equalsIgnoreCase(branch)) ||
+                        (e.sourceHandle != null && e.sourceHandle.equalsIgnoreCase(branch)))
                 .findFirst();
 
         if (edge.isPresent()) {
@@ -63,6 +49,20 @@ public class NodeResolver {
                     .filter(n -> n.id.equals(targetId))
                     .findFirst()
                     .orElse(null);
+        }
+        return null;
+    }
+
+    private static String getBranchFlag(Node current, ExecutionContext context) {
+        if (!"CONDITIONAL".equalsIgnoreCase(current.type)) {
+            return null;
+        }
+        Object nodeOutput = context.getNodeOutput(current.id);
+        if (nodeOutput instanceof Map<?, ?> details) {
+            Object selected = details.get("selectedBranch");
+            if (selected != null) {
+                return String.valueOf(selected);
+            }
         }
         return null;
     }

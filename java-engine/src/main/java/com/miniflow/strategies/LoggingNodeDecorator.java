@@ -41,8 +41,10 @@ public class LoggingNodeDecorator implements NodeExecutor {
                 System.out.println("[JAVA-STDOUT]: [" + node.getId() + "]    OUTPUT DATA -->: "
                         + LogUtils.formatMapForLog(outputState));
                 if (nodeDetails instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> detailsMap = (Map<String, Object>) nodeDetails;
                     System.out.println("[JAVA-STDOUT]: [" + node.getId() + "]    NODE_EXEC_DETAILS -->: "
-                            + LogUtils.formatMapForLog((Map<String, Object>) nodeDetails));
+                            + LogUtils.formatMapForLog(detailsMap));
                 }
                 System.out.println("[JAVA-STDOUT]: [" + node.getId() + "] ");
                 System.out.println("[JAVA-STDOUT]: [" + node.getId() + "] Resultado --> OK");

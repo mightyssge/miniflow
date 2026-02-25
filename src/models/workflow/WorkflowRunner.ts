@@ -1,47 +1,60 @@
 // src/models/workflow/WorkflowRunner.ts
-export const parseJavaExecutionLogs = (stdout: string, nodes: any[]) => {
-  const steps: any[] = [];
-  const lines = stdout.split('\n');
+import type { MiniflowNode, ExecutionStep } from './coreTypes';
 
-  lines.forEach((line) => {
-    // Thread-safe isolation: Buscamos el ID inyectado explícitamente [JAVA-STDOUT]: [node-id]
+export const parseJavaExecutionLogs = (stdout: string, nodes: MiniflowNode[]): ExecutionStep[] => {
+  const steps: ExecutionStep[] = [];
+
+  stdout.split('\n').forEach((line) => {
     const idMatch = line.match(/\[JAVA-STDOUT\]:\s*\[([^\]]+)\]/);
-    if (!idMatch) return; // Si no tiene un ID explícito, es un log global, lo ignoramos
+    if (!idMatch) return;
 
     const nodeId = idMatch[1].trim();
     let step = steps.find(s => s.nodeId === nodeId);
 
-    // Si es la primera vez que leemos algo de este nodo, revisamos si es la línea de inicialización "Nodo: ID [TIPO]"
     if (!step) {
-      const typeMatch = line.match(/Nodo:\s+[^\s]+\s+\[([^\]]+)\]/);
-      if (typeMatch) {
-        step = {
-          nodeId: nodeId,
-          nodeType: typeMatch[1].trim(),
-          status: "SUCCESS",
-          nodeLabel: nodes.find(n => n.id === nodeId)?.data?.label || "Nodo",
-          durationMs: 0, inputData: null, outputData: null, configData: null, details: null
-        };
-        steps.push(step);
-      }
+      step = initializeStep(line, nodeId, nodes);
+      if (step) steps.push(step);
     }
 
     if (step) {
-      if (line.includes("-> INPUT DATA:")) step.inputData = tryParse(line, "INPUT DATA:");
-      if (line.includes("-> CONFIG:")) step.configData = tryParse(line, "CONFIG:");
-      if (line.includes("OUTPUT DATA -->:")) step.outputData = tryParse(line, "OUTPUT DATA -->:");
-      if (line.includes("NODE_EXEC_DETAILS -->:")) step.details = tryParse(line, "NODE_EXEC_DETAILS -->:");
-      if (line.includes("Resultado: ERROR -->")) {
-        step.status = "ERROR";
-        step.error = line.split("Resultado: ERROR -->")[1]?.trim() || "Error en ejecución";
-      }
-      if (line.includes("DURATION -->:")) {
-        const match = line.match(/DURATION -->:\s+(\d+)ms/);
-        if (match) step.durationMs = parseInt(match[1], 10);
-      }
+      applyLineToStep(step, line);
     }
   });
+
   return steps;
+};
+
+const initializeStep = (line: string, nodeId: string, nodes: MiniflowNode[]): ExecutionStep | undefined => {
+  const typeMatch = line.match(/Nodo:\s+[^\s]+\s+\[([^\]]+)\]/);
+  if (!typeMatch) return undefined;
+  return {
+    nodeId,
+    nodeType: typeMatch[1].trim(),
+    status: "SUCCESS",
+    nodeLabel: nodes.find(n => n.id === nodeId)?.data?.label || "Nodo",
+    durationMs: 0,
+    inputData: null,
+    outputData: null,
+    configData: null,
+    details: null
+  };
+};
+
+const applyLineToStep = (step: ExecutionStep, line: string) => {
+  if (line.includes("-> INPUT DATA:")) step.inputData = tryParse(line, "INPUT DATA:");
+  if (line.includes("-> CONFIG:")) step.configData = tryParse(line, "CONFIG:");
+  if (line.includes("OUTPUT DATA -->:")) step.outputData = tryParse(line, "OUTPUT DATA -->:");
+  if (line.includes("NODE_EXEC_DETAILS -->:")) step.details = tryParse(line, "NODE_EXEC_DETAILS -->:");
+
+  if (line.includes("Resultado: ERROR -->")) {
+    step.status = "ERROR";
+    step.error = line.split("Resultado: ERROR -->")[1]?.trim() || "Error en ejecución";
+  }
+
+  if (line.includes("DURATION -->:")) {
+    const match = line.match(/DURATION -->:\s+(\d+)ms/);
+    if (match) step.durationMs = parseInt(match[1], 10);
+  }
 };
 
 const tryParse = (line: string, marker: string) => {

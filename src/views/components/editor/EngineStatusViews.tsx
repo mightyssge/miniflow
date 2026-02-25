@@ -1,10 +1,11 @@
 import { AlertTriangle } from "lucide-react";
 import styles from "../../pages/WorkflowEditor.module.css";
+import type { MiniflowNode, ExecutionStep } from "../../../models/workflow/coreTypes";
 
 interface StepsTimelineProps {
-    steps: any[];
-    nodes: any[];
-    setTimelineStep: (step: any) => void;
+    steps: ExecutionStep[];
+    nodes: MiniflowNode[];
+    setTimelineStep: (step: ExecutionStep) => void;
     setEditingNodeId: (id: string | null) => void;
 }
 
@@ -13,7 +14,7 @@ export function StepsTimeline({ steps, nodes, setTimelineStep, setEditingNodeId 
 
     return (
         <div className={styles.stepsTimeline}>
-            {steps.map((step: any, i: number, arr: any[]) => (
+            {steps.map((step: ExecutionStep, i: number, arr: ExecutionStep[]) => (
                 <div
                     key={i}
                     className={`${styles.timelineItem} ${step.status === "ERROR" ? styles.timelineItemError : styles.timelineItemOk}`}
