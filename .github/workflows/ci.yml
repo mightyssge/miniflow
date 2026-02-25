@@ -43,10 +43,8 @@ jobs:
       run: npm run build:electron
 
     # 4. Pilar 2: Backend Maven (Build + Unit Tests + Jacoco)
-    # Ejecutamos el wrap exacto que usas en package.json (npm run build:engine)
-    # Esto invocará mvn clean package en la carpeta de java ejecutando automáticamente 
-    # todos los tests y verificando las reglas de cobertura.
+    # Ejecutamos el wrap exacto que compilara el jar en Ubuntu/Linux
     - name: Build Engine & Run Unit Tests (Java)
-      run: npm run build:engine
+      run: npm run build:engine-linux
 
 
