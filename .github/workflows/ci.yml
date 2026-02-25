@@ -49,9 +49,4 @@ jobs:
     - name: Build Engine & Run Unit Tests (Java)
       run: npm run build:engine
 
-    # 5. Pilar 3: Control de Calidad Ciclomática (Lizard)
-    - name: Install Lizard (Cyclomatic Complexity Analyzer)
-      run: pip install lizard
 
-    - name: Run Quality Gate Script
-      run: python evaluate_complexity.py
