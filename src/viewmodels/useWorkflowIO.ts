@@ -10,30 +10,43 @@ export function useWorkflowIO(onImportSuccess: (wf: Workflow) => void) {
 
   const handleImport = async (file: File) => {
     try {
+      console.log("[useWorkflowIO] Starting file read for:", file.name, file.type, file.size);
       const text = await file.text();
+      console.log("[useWorkflowIO] File text read successfully (length):", text.length);
       const rawData = JSON.parse(text);
+      console.log("[useWorkflowIO] JSON parsed successfully:", Object.keys(rawData));
 
-      if (!rawData.nodes || !rawData.edges) throw new Error("Formato JSON inválido.");
+      if (!rawData.nodes || !rawData.edges) throw new Error("Formato JSON inválido. Faltan nodes o edges.");
 
+      console.log("[useWorkflowIO] Deserializing workflow...");
       const workflow = deserializeWorkflow(rawData);
+      console.log("[useWorkflowIO] Validating workflow...");
       const report = validate(workflow.nodes, workflow.edges);
 
       if (!report.isValid) {
-        const errors = report.issues.filter(i => i.severity === "error").map(i => i.message);
-        throw new Error("Errores de validación:\n" + errors.slice(0, 3).join("\n"));
+        console.warn("[useWorkflowIO] Workflow importado contiene errores de validación (incompleto), pero será cargado en el canvas.", report.issues);
       }
 
+      console.log("[useWorkflowIO] Validation passed/bypassed. Firing onImportSuccess...");
       onImportSuccess(workflow);
     } catch (err: any) {
       console.error("[Import Error]:", err);
-      throw new Error(err.message || "Error al importar el archivo.");
+      if (typeof window !== "undefined") {
+        alert("Error al importar el archivo: " + err.message);
+      }
     }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[useWorkflowIO] onFileChange triggered", e.target.files);
     const file = e.target.files?.[0];
-    if (file) handleImport(file);
-    e.target.value = "";
+    if (file) {
+      console.log("[useWorkflowIO] File detected, calling handleImport");
+      handleImport(file);
+    } else {
+      console.log("[useWorkflowIO] No file detected in event");
+    }
+    e.target.value = ""; // Permite re-seleccionar el mismo archivo
   };
 
   const downloadJsonFile = useCallback((state: any, handlers: any) => {
