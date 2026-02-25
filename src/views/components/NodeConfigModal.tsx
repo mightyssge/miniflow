@@ -4,6 +4,7 @@ import { ModalHeader } from "./NodeConfigParts/ModalHeader";
 import { ModalBody } from "./NodeConfigParts/ModalBody";
 import { ModalFooter } from "./NodeConfigParts/ModalFooter";
 import { JsonTabViewer } from "./NodeConfigParts/JsonTabViewer";
+import { CmdTabViewer } from "./NodeConfigParts/CmdTabViewer";
 import styles from "./NodeConfigModal.module.css";
 
 import type { MiniflowNode, ExecutionStep } from "../../models/workflow/coreTypes";
@@ -19,8 +20,9 @@ interface Props {
 const generateTabs = (type: string, isReadOnly: boolean) => {
     return [
         { id: 'parameters', label: 'Parameters', show: true },
-        { id: 'input', label: 'Input', show: isReadOnly || type !== 'start' },
+        { id: 'input', label: 'Input', show: isReadOnly },
         { id: 'config', label: 'Config', show: isReadOnly },
+        { id: 'cmd', label: 'Terminal', show: isReadOnly && type === 'command' },
         { id: 'output', label: 'Output', show: isReadOnly },
         { id: 'details', label: 'Exec. Details', show: isReadOnly },
     ].filter(t => t.show);
@@ -47,7 +49,7 @@ export function NodeConfigModal({ node, execStep, initialTab = "parameters", onS
                     activeTab={state.activeTab}
                     onTabChange={actions.setActiveTab}
                     onTest={() => actions.setTestResult("⏳ Función disponible próximamente — requiere integración con el motor de ejecución.")}
-                    showTest={["http_request", "command", "conditional"].includes(type)}
+                    showTest={false}
                     onClose={onClose}
                     tabs={TABS}
                 />
@@ -60,6 +62,8 @@ export function NodeConfigModal({ node, execStep, initialTab = "parameters", onS
                             actions={actions}
                             isReadOnly={isReadOnly}
                         />
+                    ) : state.activeTab === 'cmd' ? (
+                        <CmdTabViewer execStep={execStep} />
                     ) : (
                         <JsonTabViewer
                             activeTab={state.activeTab}
