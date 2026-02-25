@@ -99,5 +99,14 @@ def main():
             
     print(f"Archivo de reporte creado/actualizado: {report_path}")
 
+    # Fallar el script si hay violaciones del Quality Gate
+    import sys
+    if high_complexity_funcs:
+        print("\n❌ CI/CD Quality Gate Fallido: Se detectaron funciones con alta complejidad ciclomática.")
+        sys.exit(1)
+    else:
+        print("\n✅ CI/CD Quality Gate Superado: Complejidad aceptable.")
+        sys.exit(0)
+
 if __name__ == "__main__":
     main()

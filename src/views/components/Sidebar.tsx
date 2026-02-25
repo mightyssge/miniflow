@@ -6,7 +6,8 @@ import { NODE_PALETTE } from "./nodeConstants";
 import { SectionHeader, NodePaletteCard } from "./SidebarParts";
 import { useSidebar } from "../../hooks/useSidebar";
 
-import wf1 from "../../../workflows_a_probar/workflow_1.json";
+import wf1_1 from "../../../workflows_a_probar/workflow_1.1.json";
+import wf1_2 from "../../../workflows_a_probar/workflow_1.2.json";
 import wf2 from "../../../workflows_a_probar/workflow_2.json";
 import wf3 from "../../../workflows_a_probar/workflow_3.json";
 
@@ -48,8 +49,11 @@ export function Sidebar({ state, handlers }: any) {
             <SectionHeader title="Workflows de Prueba" open={testWfOpen} collapsed={ui.collapsed} onToggle={() => setTestWfOpen(!testWfOpen)} />
             <div className={`${styles.sectionBody} ${testWfOpen ? styles.sectionOpen : ""}`}>
               <div className={styles.actionGrid}>
-                <button className={styles.actionBtn} onClick={() => { handlers.setNodes(wf1.nodes); handlers.setEdges(wf1.edges); }}>
-                  <span style={{ fontSize: '16px' }}>🚀</span> Workflow 1 (API)
+                <button className={styles.actionBtn} onClick={() => { handlers.setNodes(wf1_1.nodes); handlers.setEdges(wf1_1.edges); }}>
+                  <span style={{ fontSize: '16px' }}>✔️</span> Workflow 1.1 (Éxito)
+                </button>
+                <button className={styles.actionBtn} onClick={() => { handlers.setNodes(wf1_2.nodes); handlers.setEdges(wf1_2.edges); }}>
+                  <span style={{ fontSize: '16px' }}>❌</span> Workflow 1.2 (Error)
                 </button>
                 <button className={styles.actionBtn} onClick={() => { handlers.setNodes(wf2.nodes); handlers.setEdges(wf2.edges); }}>
                   <span style={{ fontSize: '16px' }}>⚙️</span> Workflow 2 (ETL)

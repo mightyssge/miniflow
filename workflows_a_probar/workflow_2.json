@@ -23,7 +23,7 @@
                 "label": "Extraer datos",
                 "config": {
                     "command": "bash",
-                    "args": "extract.sh",
+                    "args": "../workflows_a_probar/wf2/extract.sh",
                     "outputKey": "rawData"
                 }
             }
@@ -39,7 +39,8 @@
                 "label": "Transformar datos",
                 "config": {
                     "command": "python",
-                    "args": "transform.py",
+                    "args": "../workflows_a_probar/wf2/transform.py",
+                    "inputKey": "rawData",
                     "outputKey": "cleanedData"
                 }
             }
@@ -55,7 +56,9 @@
                 "label": "Cargar resultados",
                 "config": {
                     "command": "python",
-                    "args": "load.py"
+                    "args": "load.py",
+                    "inputKey": "cleanedData",
+                    "cwd": "../workflows_a_probar/wf2"
                 }
             }
         }

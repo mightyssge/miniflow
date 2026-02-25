@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 
 export function useNodeConfig(
-    node: any, 
-    onSave: Function, 
-    onClose: Function, 
+    node: any,
+    onSave: Function,
+    onClose: Function,
     initialTab: string = "parameters" // Added this parameter
 ) {
     // Initialize with initialTab instead of a hardcoded string
@@ -30,11 +30,19 @@ export function useNodeConfig(
         return () => document.removeEventListener("keydown", handleEscape);
     }, [handleEscape]);
 
-    const patchConfig = (key: string, value: any) => 
+    const patchConfig = (key: string, value: any) =>
         setConfig((c: any) => ({ ...c, [key]: value }));
 
     const patchMap = (key: string, value: string) =>
-        setConfig((c: any) => ({ ...c, map: { ...(c.map || {}), [key]: value } }));
+        setConfig((c: any) => {
+            const newMap = { ...(c.map || {}) };
+            if (value === "") {
+                delete newMap[key];
+            } else {
+                newMap[key] = value;
+            }
+            return { ...c, map: newMap };
+        });
 
     const handleSave = () => {
         onSave(node.id, { label, config });

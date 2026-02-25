@@ -36,11 +36,18 @@ public class HttpRequestStrategy implements NodeExecutor {
         // Snapshot técnico aislado
         ctx.setNodeOutput(nodeId, Map.of("status_code", status, "response", parsedBody));
 
-        // Mapeo inteligente (Cero contaminación)
         Object mapObj = cfg.getOrDefault("map", cfg.get("outputMapping"));
         if (mapObj instanceof Map<?, ?> mapping) {
-            mapping.forEach((k, v) -> ctx.setVariable(String.valueOf(k),
-                    TypeConverter.normalize(JsonUtils.extractByPath(parsedBody, String.valueOf(v)))));
+            // Limpieza previa de las variables configuradas en el map para evitar arrastrar
+            // basura
+            mapping.keySet().forEach(k -> ctx.getVariables().remove(String.valueOf(k)));
+
+            mapping.forEach((k, v) -> {
+                Object extracted = JsonUtils.extractByPath(parsedBody, String.valueOf(v));
+                if (extracted != null) {
+                    ctx.setVariable(String.valueOf(k), TypeConverter.normalize(extracted));
+                }
+            });
         } else {
             ctx.setVariable("lastResponse", Map.of("status_code", status, "response", parsedBody));
         }

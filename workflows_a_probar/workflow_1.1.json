@@ -1,5 +1,5 @@
 {
-    "name": "Workflow 1: Consumo de API",
+    "name": "Workflow 1.1: Consumo de API (Éxito)",
     "nodes": [
         {
             "id": "start-1",
@@ -23,13 +23,13 @@
                 "label": "Consultar API",
                 "config": {
                     "method": "GET",
-                    "url": "https://api.example.com/data",
+                    "url": "https://mocki.io/v1/b5664175-2c99-4480-be7d-61bc766e0445",
                     "timeoutMs": 5000,
                     "retries": 3,
                     "errorPolicy": "CONTINUE_ON_FAIL",
                     "map": {
                         "status": "$.status",
-                        "payload": "$.data"
+                        "payload": "$.payload"
                     }
                 }
             }
@@ -59,7 +59,7 @@
                 "label": "Procesar datos (TRUE)",
                 "config": {
                     "command": "python",
-                    "args": "../workflows_a_probar/wf1/process.py"
+                    "args": "../workflows_a_probar/wf1/process.py \"{{ payload }}\""
                 }
             }
         },

@@ -39,12 +39,38 @@ export function FlowCanvas({
     onDrop,
     wrapperRef
 }: FlowCanvasProps) {
+    const displayEdges = React.useMemo(() => {
+        return (state.edges || []).map((e: any) => {
+            if (e.sourceHandle === 'true' && !e.label) {
+                return {
+                    ...e,
+                    label: 'TRUE',
+                    labelStyle: { fill: '#28b478', fontWeight: 800, fontSize: 11, letterSpacing: '0.5px' },
+                    labelBgStyle: { fill: '#0a101e', fillOpacity: 0.8 },
+                    labelBgPadding: [4, 2],
+                    labelBgBorderRadius: 4
+                };
+            }
+            if (e.sourceHandle === 'false' && !e.label) {
+                return {
+                    ...e,
+                    label: 'FALSE',
+                    labelStyle: { fill: '#d23750', fontWeight: 800, fontSize: 11, letterSpacing: '0.5px' },
+                    labelBgStyle: { fill: '#0a101e', fillOpacity: 0.8 },
+                    labelBgPadding: [4, 2],
+                    labelBgBorderRadius: 4
+                };
+            }
+            return e;
+        });
+    }, [state.edges]);
+
     return (
         <main className="miniflow-canvas-wrap" ref={wrapperRef} style={{ flex: 1, position: 'relative' }}>
             <NodeActionsProvider actions={nodeActions}>
                 <ReactFlow
                     nodes={state.nodes}
-                    edges={state.edges}
+                    edges={displayEdges}
                     nodeTypes={nodeTypes}
                     onNodesChange={handlers.onNodesChange}
                     onEdgesChange={handlers.onEdgesChange}

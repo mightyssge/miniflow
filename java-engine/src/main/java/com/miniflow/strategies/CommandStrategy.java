@@ -20,6 +20,11 @@ public class CommandStrategy implements NodeExecutor {
         if (command == null || command.isBlank())
             throw new Exception("Command is required");
 
+        // Parche de compatibilidad Windows para rubric requirements (bash nativo)
+        if (OSUtils.isWindows() && command.trim().equalsIgnoreCase("bash")) {
+            command = "\"C:\\Program Files\\Git\\bin\\bash.exe\"";
+        }
+
         // 2. Preparar el comando final
         String finalArgs = prepareArguments(command, scriptPath, args, context);
         String fullCommand = finalArgs.isBlank() ? command : command + " " + finalArgs;
@@ -32,7 +37,48 @@ public class CommandStrategy implements NodeExecutor {
             throws Exception {
         List<String> wrapper = OSUtils.isWindows() ? List.of("cmd", "/c", fullCmd) : List.of("bash", "-lc", fullCmd);
 
-        Process process = new ProcessBuilder(wrapper).start();
+        ProcessBuilder pb = new ProcessBuilder(wrapper);
+
+        // 0. Soporte para CWD dinámico
+        String cwdPath = TypeConverter.asString(cfg.get("cwd"));
+        if (cwdPath != null && !cwdPath.isBlank()) {
+            Path p = Paths.get(TemplateEngine.render(cwdPath, ctx));
+            if (Files.exists(p)) {
+                pb.directory(p.toFile());
+            }
+        }
+
+        Process process = pb.start();
+
+        // 0. Si hay inputKey, inyectarlo por STDIN (tubería) para evitar límites de arg
+        // length en Windows
+        String inputKey = TypeConverter.asString(cfg.get("inputKey"));
+        if (inputKey != null && !inputKey.isBlank()) {
+            Object inputData = ctx.getVariable(inputKey);
+            if (inputData != null) {
+                try (java.io.OutputStream os = process.getOutputStream()) {
+                    os.write(String.valueOf(inputData).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                }
+            }
+        }
+
+        // Evitar deadlock por buffer OS lleno consumiendo la salida asincrónicamente
+        java.util.concurrent.CompletableFuture<String> outFuture = java.util.concurrent.CompletableFuture
+                .supplyAsync(() -> {
+                    try {
+                        return OSUtils.readStream(process.getInputStream());
+                    } catch (Exception e) {
+                        return "";
+                    }
+                });
+        java.util.concurrent.CompletableFuture<String> errFuture = java.util.concurrent.CompletableFuture
+                .supplyAsync(() -> {
+                    try {
+                        return OSUtils.readStream(process.getErrorStream());
+                    } catch (Exception e) {
+                        return "";
+                    }
+                });
 
         long timeoutMs = TypeConverter.asInt(cfg.get("timeoutMs"), 30000);
         boolean finished = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -42,8 +88,8 @@ public class CommandStrategy implements NodeExecutor {
             throw new Exception("Command Execution Time Out Exceeded (" + timeoutMs + "ms)");
         }
 
-        String stdout = OSUtils.readStream(process.getInputStream());
-        String stderr = OSUtils.readStream(process.getErrorStream());
+        String stdout = outFuture.get();
+        String stderr = errFuture.get();
         int exitCode = process.exitValue();
 
         // 1. Guardamos la salida técnica en NodeOutput (específico para el modal de la
