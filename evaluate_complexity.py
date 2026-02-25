@@ -101,10 +101,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-            print(f"Reporte generado con {len(high_complexity_funcs)} alertas de complejidad. Archivo creado: {report_path}")
-        else:
-            f.write("¡Excelente!\nNo se detectaron funciones con complejidad ciclomática mayor a 10 en todo el proyecto.\n")
-            print(f"Reporte limpio. Archivo creado: {report_path}")
-
-if __name__ == "__main__":
-    main()

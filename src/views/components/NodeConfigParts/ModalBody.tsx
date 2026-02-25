@@ -3,6 +3,7 @@ import { HttpRequestForm } from "../NodeConfigForms/HttpRequestForm";
 import { CommandForm } from "../NodeConfigForms/CommandForm";
 import { ConditionalForm } from "../NodeConfigForms/ConditionalForm";
 import { TimerForm } from "../NodeConfigForms/TimerForm";
+import { ParallelForm } from "../NodeConfigForms/ParallelForm";
 
 export function ModalBody({ type, state, actions, isReadOnly }: any) {
     // Extraemos para que el switch sea más legible
@@ -17,36 +18,38 @@ export function ModalBody({ type, state, actions, isReadOnly }: any) {
                 return <div className={styles.infoBox}>El nodo End finaliza la ejecución del workflow.</div>;
             case "http_request":
                 return (
-                    <HttpRequestForm 
-                        config={config} 
-                        isReadOnly={isReadOnly} 
-                        patchConfig={patchConfig} 
-                        patchMap={patchMap} 
+                    <HttpRequestForm
+                        config={config}
+                        isReadOnly={isReadOnly}
+                        patchConfig={patchConfig}
+                        patchMap={patchMap}
                     />
                 );
             case "command":
                 return (
-                    <CommandForm 
-                        config={config} 
-                        isReadOnly={isReadOnly} 
-                        patchConfig={patchConfig} 
+                    <CommandForm
+                        config={config}
+                        isReadOnly={isReadOnly}
+                        patchConfig={patchConfig}
                     />
                 );
             case "conditional":
                 return (
-                    <ConditionalForm 
-                        config={config} 
-                        isReadOnly={isReadOnly} 
-                        patchConfig={patchConfig} 
+                    <ConditionalForm
+                        config={config}
+                        isReadOnly={isReadOnly}
+                        patchConfig={patchConfig}
                     />
                 );
             case "timer":
                 return (
-                    <TimerForm 
-                        config={config} 
-                        patchConfig={patchConfig} 
+                    <TimerForm
+                        config={config}
+                        patchConfig={patchConfig}
                     />
                 );
+            case "parallel":
+                return <ParallelForm />;
             default:
                 return null;
         }
@@ -56,16 +59,16 @@ export function ModalBody({ type, state, actions, isReadOnly }: any) {
         <>
             <div className={styles.field}>
                 <label>Etiqueta</label>
-                <input 
-                    value={state.label} 
-                    onChange={e => !isReadOnly && actions.setLabel(e.target.value)} 
+                <input
+                    value={state.label}
+                    onChange={e => !isReadOnly && actions.setLabel(e.target.value)}
                     placeholder="Nombre del nodo"
-                    disabled={isReadOnly} 
+                    disabled={isReadOnly}
                 />
             </div>
-            
+
             {renderForm()}
-            
+
             {state.testResult && (
                 <div className={styles.testResultBox}>
                     <pre>{state.testResult}</pre>

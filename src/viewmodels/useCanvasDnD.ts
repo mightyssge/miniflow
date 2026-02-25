@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useReactFlow } from "reactflow";
-import type { NodeType } from "../../models/workflow/types";
+import type { NodeType } from "../models/workflow/types";
 
 export function useCanvasDnD(handlers: any) {
     const reactFlowInstance = useReactFlow();

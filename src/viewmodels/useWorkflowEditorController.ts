@@ -19,6 +19,7 @@ export function useWorkflowEditorController(
     const [importOpen, setImportOpen] = useState(false);
     const [importJson, setImportJson] = useState("");
     const [deleteOpen, setDeleteOpen] = useState(false);
+    const [historyOpen, setHistoryOpen] = useState(false);
     const [pillTab, setPillTab] = useState<"steps" | "terminal">("steps");
     const [timelineStep, setTimelineStep] = useState<any>(null);
 
@@ -39,7 +40,10 @@ export function useWorkflowEditorController(
     }), [handlers]);
 
     /* ── Modals & UI Handlers ── */
-    const handleSerializeAndCopy = useCallback(() => copyToClipboard(state, handlers), [copyToClipboard, state, handlers]);
+    const handleSerializeAndCopy = useCallback(async () => {
+        await copyToClipboard(state, handlers);
+        showToast("JSON copiado al portapapeles");
+    }, [copyToClipboard, state, handlers, showToast]);
     const handleSerializeAndDownload = useCallback(() => downloadJsonFile(state, handlers), [downloadJsonFile, state, handlers]);
     const handleDeleteRequest = useCallback(() => setDeleteOpen(true), []);
     const handleImportTextRequest = useCallback(() => { setImportJson(""); setImportOpen(true); }, []);
@@ -75,6 +79,7 @@ export function useWorkflowEditorController(
             importOpen,
             importJson,
             deleteOpen,
+            historyOpen,
             pillTab,
             timelineStep,
         },
@@ -82,6 +87,7 @@ export function useWorkflowEditorController(
             setImportJson,
             setPillTab,
             setTimelineStep,
+            setHistoryOpen,
         },
         io: {
             onFileChange,

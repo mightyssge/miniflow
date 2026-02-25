@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import styles from "../pages/WorkflowEditor.module.css";
+import styles from "../../pages/WorkflowEditor.module.css";
 import { useState } from "react";
 import { EngineStatusIcon, EngineStatusLabel } from "./EngineStatusIcon";
 import { StepsTimeline } from "./EngineStatusViews";

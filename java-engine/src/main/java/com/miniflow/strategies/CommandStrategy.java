@@ -17,7 +17,8 @@ public class CommandStrategy implements NodeExecutor {
         String args = TemplateEngine.render(TypeConverter.asString(cfg.get("args")), context);
         String scriptPath = TemplateEngine.render(TypeConverter.asString(cfg.get("scriptPath")), context);
 
-        if (command == null || command.isBlank()) throw new Exception("Command is required");
+        if (command == null || command.isBlank())
+            throw new Exception("Command is required");
 
         // 2. Preparar el comando final
         String finalArgs = prepareArguments(command, scriptPath, args, context);
@@ -27,22 +28,33 @@ public class CommandStrategy implements NodeExecutor {
         executeProcess(fullCommand, cfg, context, node.getId());
     }
 
-    private void executeProcess(String fullCmd, Map<String, Object> cfg, ExecutionContext ctx, String nodeId) throws Exception {
+    private void executeProcess(String fullCmd, Map<String, Object> cfg, ExecutionContext ctx, String nodeId)
+            throws Exception {
         List<String> wrapper = OSUtils.isWindows() ? List.of("cmd", "/c", fullCmd) : List.of("bash", "-lc", fullCmd);
-        
+
         Process process = new ProcessBuilder(wrapper).start();
+
+        long timeoutMs = TypeConverter.asInt(cfg.get("timeoutMs"), 30000);
+        boolean finished = process.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
+
+        if (!finished) {
+            process.destroyForcibly();
+            throw new Exception("Command Execution Time Out Exceeded (" + timeoutMs + "ms)");
+        }
+
         String stdout = OSUtils.readStream(process.getInputStream());
         String stderr = OSUtils.readStream(process.getErrorStream());
-        int exitCode = process.waitFor();
-        
-        // 1. Guardamos TODO lo técnico en NodeOutput (específico para el modal de la UI y el Log)
+        int exitCode = process.exitValue();
+
+        // 1. Guardamos la salida técnica en NodeOutput (específico para el modal de la
+        // UI y el Log)
         // Esto NO se pasa al siguiente nodo vía contexto global.
         Map<String, Object> nodeResults = new HashMap<>();
         nodeResults.put("stdout", stdout);
         nodeResults.put("stderr", stderr);
         nodeResults.put("exitCode", exitCode);
         nodeResults.put("fullCommandExecuted", fullCmd);
-        
+
         ctx.setNodeOutput(nodeId, nodeResults);
 
         // 2. Solo afectamos el contexto GLOBAL si el usuario lo pidió explícitamente
@@ -63,14 +75,15 @@ public class CommandStrategy implements NodeExecutor {
 
         if (isPy && path != null && !path.isBlank()) {
             Path p = Paths.get(path.replace("\"", ""));
-            if (!Files.exists(p)) throw new Exception("Script not found: " + path);
+            if (!Files.exists(p))
+                throw new Exception("Script not found: " + path);
             sb.append(OSUtils.quote(path)).append(" ");
         }
 
         if (args != null && !args.isBlank()) {
             sb.append(args.trim()).append(" ");
         }
-        
+
         Object payload = ctx.getVariable("payload");
         if (isPy && payload != null && (args == null || args.isBlank())) {
             sb.append(OSUtils.quote(String.valueOf(payload)));

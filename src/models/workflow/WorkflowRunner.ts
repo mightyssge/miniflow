@@ -3,9 +3,8 @@ export const parseJavaExecutionLogs = (stdout: string, nodes: any[]) => {
   const steps: any[] = [];
   const lines = stdout.split('\n');
   let currentStep: any = null;
-  let stepStartLine = -1;
 
-  lines.forEach((line, i) => {
+  lines.forEach((line) => {
     const nodeMatch = line.match(/Nodo:\s+([a-zA-Z0-9\-]+)\s+\[([^\]]+)\]/);
     if (nodeMatch) {
       currentStep = {
@@ -15,7 +14,6 @@ export const parseJavaExecutionLogs = (stdout: string, nodes: any[]) => {
         nodeLabel: nodes.find(n => n.id === nodeMatch[1].trim())?.data?.label || "Nodo",
         durationMs: 0, inputData: null, outputData: null, configData: null, details: null
       };
-      stepStartLine = i;
       steps.push(currentStep);
     } else if (currentStep) {
       if (line.includes("-> INPUT DATA:")) currentStep.inputData = tryParse(line, "INPUT DATA:");
@@ -26,7 +24,10 @@ export const parseJavaExecutionLogs = (stdout: string, nodes: any[]) => {
         currentStep.status = "ERROR";
         currentStep.error = "Error in node execution";
       }
-      currentStep.durationMs = Math.max(2, (i - stepStartLine) * 12);
+      if (line.includes("DURATION -->:")) {
+        const match = line.match(/DURATION -->:\s+(\d+)ms/);
+        if (match) currentStep.durationMs = parseInt(match[1], 10);
+      }
     }
   });
   return steps;

@@ -11,7 +11,7 @@ public class HttpRequestStrategy implements NodeExecutor {
     @Override
     public void execute(Node node, ExecutionContext context) throws Exception {
         Map<String, Object> cfg = node.getConfig();
-        
+
         // 1. Resolver parámetros con Template Engine
         String method = TypeConverter.asString(cfg.getOrDefault("method", "GET"));
         List<String> urls = resolveUrls(cfg, context);
@@ -20,16 +20,16 @@ public class HttpRequestStrategy implements NodeExecutor {
 
         // 2. Ejecutar vía Helper
         HttpResponse<String> resp = HttpHelper.executeWithRetries(
-            urls, method, body, headers, 
-            TypeConverter.asInt(cfg.get("timeoutMs"), 5000), 
-            TypeConverter.asInt(cfg.get("retries"), 0)
-        );
+                urls, method, body, headers,
+                TypeConverter.asInt(cfg.get("timeoutMs"), 5000),
+                TypeConverter.asInt(cfg.get("retries"), 0));
 
         // 3. Procesar y guardar (Limpieza de contexto)
         processOutput(node.getId(), resp, cfg, context);
     }
 
-    private void processOutput(String nodeId, HttpResponse<String> resp, Map<String, Object> cfg, ExecutionContext ctx) throws Exception {
+    private void processOutput(String nodeId, HttpResponse<String> resp, Map<String, Object> cfg, ExecutionContext ctx)
+            throws Exception {
         int status = resp.statusCode();
         Object parsedBody = JsonUtils.tryParse(resp.body());
 
@@ -37,14 +37,15 @@ public class HttpRequestStrategy implements NodeExecutor {
         ctx.setNodeOutput(nodeId, Map.of("status_code", status, "response", parsedBody));
 
         // Mapeo inteligente (Cero contaminación)
-        Map<String, Object> mapping = (Map<String, Object>) cfg.getOrDefault("map", cfg.get("outputMapping"));
-        if (mapping != null && !mapping.isEmpty()) {
-            mapping.forEach((k, v) -> ctx.setVariable(k, TypeConverter.normalize(JsonUtils.extractByPath(parsedBody, (String)v))));
+        Object mapObj = cfg.getOrDefault("map", cfg.get("outputMapping"));
+        if (mapObj instanceof Map<?, ?> mapping) {
+            mapping.forEach((k, v) -> ctx.setVariable(String.valueOf(k),
+                    TypeConverter.normalize(JsonUtils.extractByPath(parsedBody, String.valueOf(v)))));
         } else {
             ctx.setVariable("lastResponse", Map.of("status_code", status, "response", parsedBody));
         }
 
-        if (HttpHelper.isError(status) && "STOP".equalsIgnoreCase(TypeConverter.asString(cfg.get("errorPolicy")))) {
+        if (HttpHelper.isError(status)) {
             throw new Exception("HTTP Error " + status);
         }
     }
@@ -52,7 +53,8 @@ public class HttpRequestStrategy implements NodeExecutor {
     private List<String> resolveUrls(Map<String, Object> cfg, ExecutionContext ctx) {
         List<String> raw = new ArrayList<>();
         Optional.ofNullable(cfg.get("url")).map(String::valueOf).ifPresent(raw::add);
-        if (cfg.get("fallbackUrls") instanceof List<?> list) list.forEach(u -> raw.add(String.valueOf(u)));
+        if (cfg.get("fallbackUrls") instanceof List<?> list)
+            list.forEach(u -> raw.add(String.valueOf(u)));
         return raw.stream().map(u -> TemplateEngine.render(u, ctx)).toList();
     }
 

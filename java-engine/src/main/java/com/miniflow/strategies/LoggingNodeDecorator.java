@@ -17,6 +17,7 @@ public class LoggingNodeDecorator implements NodeExecutor {
     @Override
     @SuppressWarnings("unchecked")
     public void execute(Node node, ExecutionContext context) throws Exception {
+        long startTime = System.currentTimeMillis();
         // 1. Filtrar variables internas (__branch, __startTime, etc.)
         // Esto asegura que el usuario solo vea SUS datos.
         Map<String, Object> inputState = filterInternalVars(context.getVariables());
@@ -51,6 +52,8 @@ public class LoggingNodeDecorator implements NodeExecutor {
             System.out.println("[JAVA-STDOUT]:    Resultado: ERROR --> " + errorDetail.replace("\n", " "));
             throw e;
         } finally {
+            long durationMs = System.currentTimeMillis() - startTime;
+            System.out.println("[JAVA-STDOUT]:    DURATION -->: " + durationMs + "ms");
             System.out.println("[JAVA-STDOUT]: ======================");
         }
     }

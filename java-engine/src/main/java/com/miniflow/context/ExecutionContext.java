@@ -5,13 +5,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ExecutionContext {
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
-    
+
     // REFACTOR: Aquí guardamos el "Panel Derecho" indexado por el ID del nodo
-    // Esto permite que el modal de n8n diga: "Dame el output del nodo con ID 'http-1'"
+    // Esto permite que el modal de n8n diga: "Dame el output del nodo con ID
+    // 'http-1'"
     private final Map<String, Object> nodeOutputs = new ConcurrentHashMap<>();
 
     public void setVariable(String key, Object value) {
-        if (key != null) variables.put(key, value);
+        if (key != null)
+            variables.put(key, value);
     }
 
     public Object getVariable(String key) {
@@ -35,5 +37,12 @@ public class ExecutionContext {
     public void clear() {
         variables.clear();
         nodeOutputs.clear();
+    }
+
+    public ExecutionContext cloneContext() {
+        ExecutionContext clone = new ExecutionContext();
+        clone.variables.putAll(this.variables);
+        clone.nodeOutputs.putAll(this.nodeOutputs);
+        return clone;
     }
 }

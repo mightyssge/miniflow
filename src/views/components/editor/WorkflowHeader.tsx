@@ -1,26 +1,26 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
     Save, CheckCircle, Play, Download,
-    Trash2, Clipboard, ChevronDown
+    Trash2, Clipboard, ChevronDown, List
 } from "lucide-react";
-import styles from "../pages/WorkflowEditor.module.css";
-import { useToast } from "../../../contexts/ToastContext";
+import styles from "../../pages/WorkflowEditor.module.css";
 
 interface WorkflowHeaderProps {
     name: string;
-    lastSavedAt: Date | null;
+    lastRunAt?: string;
     handlers: any;
     serializeAndCopy: () => void;
     serializeAndDownload: () => void;
     handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onDeleteRequest: () => void;
     onImportTextRequest: () => void;
-    fileInputRef: React.RefObject<HTMLInputElement>;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
     triggerImport: () => void;
 }
 
-function formatTimeAgo(date: Date | null): string {
-    if (!date) return "Sin guardar";
+function formatTimeAgo(dateStr?: string): string {
+    if (!dateStr) return "Nunca ejecutado";
+    const date = new Date(dateStr);
     const d = date.getDate();
     const m = date.getMonth() + 1;
     const y = date.getFullYear();
@@ -33,7 +33,7 @@ function formatTimeAgo(date: Date | null): string {
 
 export function WorkflowHeader({
     name,
-    lastSavedAt,
+    lastRunAt,
     handlers,
     serializeAndCopy,
     serializeAndDownload,
@@ -50,7 +50,7 @@ export function WorkflowHeader({
             <div className={styles.timestamp} style={{ flex: 1, textAlign: 'left', marginLeft: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>{name}</span>
                 <span style={{ opacity: 0.5, fontSize: '12px' }}>|</span>
-                <span>{formatTimeAgo(lastSavedAt)}</span>
+                <span>{formatTimeAgo(lastRunAt)}</span>
             </div>
 
             <div className={styles.primaryActions}>
@@ -62,6 +62,9 @@ export function WorkflowHeader({
                 </button>
                 <button className={`${styles.tbBtn} ${styles.tbExecute}`} onClick={handlers.executeNow} title="Ejecutar">
                     <Play size={15} /> Ejecutar
+                </button>
+                <button className={`${styles.tbBtn} ${styles.tbSubtle}`} onClick={() => handlers.setHistoryOpen(true)} title="Historial">
+                    <List size={15} /> Historial
                 </button>
 
                 <div className={styles.tbSep} />

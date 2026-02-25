@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { SEVERITY_MAP } from "./ValidationUtils";
-import styles from "./ValidationPanel.module.css";
+import styles from "../ValidationPanel.module.css";
 
 export function ValidationIssueRow({ issue, onFocus }: { issue: any, onFocus: (id: string) => void }) {
     const { icon: Icon, cls, label } = SEVERITY_MAP[issue.severity as keyof typeof SEVERITY_MAP];
