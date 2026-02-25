@@ -1,0 +1,22 @@
+{
+    "id": "mock-import-123",
+    "name": "Prueba de Importación",
+    "description": "",
+    "lastRunAt": "2030-01-01T00:00:00.000Z",
+    "nodes": [
+        {
+            "id": "start-node",
+            "type": "start",
+            "position": {
+                "x": 100,
+                "y": 100
+            },
+            "data": {
+                "label": "START",
+                "type": "start",
+                "config": {}
+            }
+        }
+    ],
+    "edges": []
+}
