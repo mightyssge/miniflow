@@ -18,8 +18,8 @@ export function deserializeWorkflow(raw: any, id?: string): Workflow {
         type: TYPE_MAP[pn.type?.toUpperCase()] || "command",
         position: pn.position || { x: 100 + (i * 50), y: 100 + (i * 50) },
         data: {
-            label: pn.label || pn.type || "Nodo",
-            config: pn.config || {}
+            label: pn.label || pn.data?.label || pn.type || "Nodo",
+            config: pn.config || pn.data?.config || {}
         }
     })) as FlowNode[];
 
