@@ -4,7 +4,7 @@ import { uid } from "./WorkflowFactory"
 const TYPE_MAP: Record<string, NodeType> = {
     START: "start", END: "end", HTTP_REQUEST: "http_request",
     COMMAND: "command", CONDITIONAL: "conditional", TIMER: "timer",
-    PARALLEL: "parallel"
+    PARALLEL: "parallel", PARALLEL_JOIN: "parallel_join"
 };
 
 /**

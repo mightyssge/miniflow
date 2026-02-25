@@ -74,8 +74,8 @@ function EditorInner() {
                 <EngineStatusPill
                     runStatus={state.runStatus}
                     runResult={state.runResult}
-                    runStdout={state.runResult?.stdout || ""}
-                    runStderr={state.runResult?.stderr || ""}
+                    runStdout={state.runResult?.rawStdout || ""}
+                    runStderr={state.runResult?.error || ""}
                     pillTab={uiState.pillTab}
                     setPillTab={uiSetters.setPillTab}
                     executeNow={handlers.executeNow}

@@ -3,6 +3,7 @@ import { CommandForm } from "./NodeConfigForms/CommandForm";
 import { ConditionalForm } from "./NodeConfigForms/ConditionalForm";
 import { TimerForm } from "./NodeConfigForms/TimerForm";
 import { ParallelForm } from "./NodeConfigForms/ParallelForm";
+import { ParallelJoinForm } from "./NodeConfigForms/ParallelJoinForm";
 import styles from "./NodeConfigPanel.module.css";
 import React from 'react';
 
@@ -13,6 +14,7 @@ const FormRegistry: Record<string, React.FC<any>> = {
   "conditional": ConditionalForm,
   "timer": TimerForm,
   "parallel": ParallelForm,
+  "parallel_join": ParallelJoinForm,
   "start": () => <div className={styles.small}>Nodo de entrada del workflow.</div>,
   "end": () => <div className={styles.small}>Nodo de salida del workflow.</div>,
 };

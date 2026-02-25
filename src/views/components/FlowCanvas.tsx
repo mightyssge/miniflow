@@ -1,8 +1,26 @@
 import { ReactFlow, Background, BackgroundVariant, MarkerType } from "reactflow";
 import { NodeActionsProvider } from "./NodeActionsContext";
-import { nodeTypes } from "./nodes/nodeTypes";
 import "reactflow/dist/style.css";
 import React from "react";
+import StartNode from "./nodes/StartNode";
+import HttpRequestNode from "./nodes/HttpRequestNode";
+import CommandNode from "./nodes/CommandNode";
+import ConditionalNode from "./nodes/ConditionalNode";
+import EndNode from "./nodes/EndNode";
+import TimerNode from "./nodes/TimerNode";
+import ParallelNode from "./nodes/ParallelNode";
+import ParallelJoinNode from "./nodes/ParallelJoinNode";
+
+const nodeTypes = {
+    start: StartNode,
+    http_request: HttpRequestNode,
+    command: CommandNode,
+    conditional: ConditionalNode,
+    end: EndNode,
+    timer: TimerNode,
+    parallel: ParallelNode,
+    parallel_join: ParallelJoinNode
+};
 
 interface FlowCanvasProps {
     state: any;

@@ -1,6 +1,6 @@
 import type { Node, Edge } from "reactflow"
 
-export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer" | "parallel"
+export type NodeType = "start" | "http_request" | "conditional" | "command" | "end" | "timer" | "parallel" | "parallel_join"
 export type ErrorPolicy = "STOP_ON_FAIL" | "CONTINUE_ON_FAIL"
 
 /* ── 1. Eliminando Data Clumps: Encapsulamos la expresión condicional ── */
@@ -56,6 +56,7 @@ export type FlowNode =
   | Node<{ label: string; config: ConditionalConfig }, 'conditional'>
   | Node<{ label: string; config: TimerConfig }, 'timer'>
   | Node<{ label: string; config: Record<string, never> }, 'parallel'>
+  | Node<{ label: string; config: Record<string, never> }, 'parallel_join'>
   | Node<{ label: string; config: Record<string, never> }, 'start' | 'end'>
 
 export type FlowEdge = Edge

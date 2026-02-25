@@ -44,6 +44,10 @@ public class WorkflowRunner {
                 NodeExecutor executor = ExecutorFactory.getExecutor(currentNode.type);
                 executor.execute(currentNode, context);
 
+            } catch (com.miniflow.strategies.ParallelJoinStrategy.BarrierHaltException e) {
+                // El hilo actual llegó a la barrera pero NO es el último.
+                // Debe morir silenciosamente sin reportar error general.
+                break;
             } catch (Exception e) {
                 hasErrors = true;
                 String errorMsg = (e.getMessage() == null) ? e.getClass().getSimpleName() : e.getMessage();

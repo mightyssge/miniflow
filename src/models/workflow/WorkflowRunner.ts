@@ -2,31 +2,42 @@
 export const parseJavaExecutionLogs = (stdout: string, nodes: any[]) => {
   const steps: any[] = [];
   const lines = stdout.split('\n');
-  let currentStep: any = null;
 
   lines.forEach((line) => {
-    const nodeMatch = line.match(/Nodo:\s+([a-zA-Z0-9\-]+)\s+\[([^\]]+)\]/);
-    if (nodeMatch) {
-      currentStep = {
-        nodeId: nodeMatch[1].trim(),
-        nodeType: nodeMatch[2].trim(),
-        status: "SUCCESS",
-        nodeLabel: nodes.find(n => n.id === nodeMatch[1].trim())?.data?.label || "Nodo",
-        durationMs: 0, inputData: null, outputData: null, configData: null, details: null
-      };
-      steps.push(currentStep);
-    } else if (currentStep) {
-      if (line.includes("-> INPUT DATA:")) currentStep.inputData = tryParse(line, "INPUT DATA:");
-      if (line.includes("-> CONFIG:")) currentStep.configData = tryParse(line, "CONFIG:");
-      if (line.includes("OUTPUT DATA -->:")) currentStep.outputData = tryParse(line, "OUTPUT DATA -->:");
-      if (line.includes("NODE_EXEC_DETAILS -->:")) currentStep.details = tryParse(line, "NODE_EXEC_DETAILS -->:");
-      if (line.includes("error\":")) {
-        currentStep.status = "ERROR";
-        currentStep.error = "Error in node execution";
+    // Thread-safe isolation: Buscamos el ID inyectado explícitamente [JAVA-STDOUT]: [node-id]
+    const idMatch = line.match(/\[JAVA-STDOUT\]:\s*\[([^\]]+)\]/);
+    if (!idMatch) return; // Si no tiene un ID explícito, es un log global, lo ignoramos
+
+    const nodeId = idMatch[1].trim();
+    let step = steps.find(s => s.nodeId === nodeId);
+
+    // Si es la primera vez que leemos algo de este nodo, revisamos si es la línea de inicialización "Nodo: ID [TIPO]"
+    if (!step) {
+      const typeMatch = line.match(/Nodo:\s+[^\s]+\s+\[([^\]]+)\]/);
+      if (typeMatch) {
+        step = {
+          nodeId: nodeId,
+          nodeType: typeMatch[1].trim(),
+          status: "SUCCESS",
+          nodeLabel: nodes.find(n => n.id === nodeId)?.data?.label || "Nodo",
+          durationMs: 0, inputData: null, outputData: null, configData: null, details: null
+        };
+        steps.push(step);
+      }
+    }
+
+    if (step) {
+      if (line.includes("-> INPUT DATA:")) step.inputData = tryParse(line, "INPUT DATA:");
+      if (line.includes("-> CONFIG:")) step.configData = tryParse(line, "CONFIG:");
+      if (line.includes("OUTPUT DATA -->:")) step.outputData = tryParse(line, "OUTPUT DATA -->:");
+      if (line.includes("NODE_EXEC_DETAILS -->:")) step.details = tryParse(line, "NODE_EXEC_DETAILS -->:");
+      if (line.includes("Resultado: ERROR -->")) {
+        step.status = "ERROR";
+        step.error = line.split("Resultado: ERROR -->")[1]?.trim() || "Error en ejecución";
       }
       if (line.includes("DURATION -->:")) {
         const match = line.match(/DURATION -->:\s+(\d+)ms/);
-        if (match) currentStep.durationMs = parseInt(match[1], 10);
+        if (match) step.durationMs = parseInt(match[1], 10);
       }
     }
   });

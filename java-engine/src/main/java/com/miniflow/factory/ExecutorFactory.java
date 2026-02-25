@@ -26,6 +26,7 @@ public class ExecutorFactory {
                 case "COMMAND" -> new CommandStrategy();
                 case "CONDITIONAL" -> new ConditionalStrategy();
                 case "PARALLEL" -> new ParallelStrategy();
+                case "PARALLEL_JOIN" -> new ParallelJoinStrategy();
                 case "END" -> new EndStrategy();
                 case "TIMER" -> new TimerStrategy();
                 default -> throw new IllegalArgumentException("Unknown node type: " + key);

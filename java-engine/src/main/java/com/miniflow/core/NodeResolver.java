@@ -20,13 +20,19 @@ public class NodeResolver {
         if (workflow == null || workflow.nodes == null || workflow.edges == null)
             return null;
 
-        // --- PREVENCIÓN DE DUPLICACIÓN EN PARALLEL ---
+        // --- PREVENCIÓN DE DUPLICACIÓN EN PARALLEL Y BARRERAS ---
         // El nodo PARALLEL se encarga de crear hilos para sus ramas.
         // El hilo padre no debe continuar navegando las ramas para evitar doble
         // ejecución.
         if ("PARALLEL".equalsIgnoreCase(current.type)) {
             return null; // Forzamos el FIN del hilo principal aquí
         }
+
+        // Si acabamos de procesar un nodo PARALLEL_JOIN pero la estrategia no lanzó
+        // una BarrierHaltException... significa que somos EL ÚLTIMO HILO.
+        // Por ende, está perfecto que NodeResolver continúe buscando el `target` de
+        // este join
+        // para continuar el flujo, comportándose ahora como el Main Thread.
 
         String branch = null;
         if ("CONDITIONAL".equalsIgnoreCase(current.type)) {

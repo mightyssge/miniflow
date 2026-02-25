@@ -21,34 +21,52 @@ export const validate = (nodes: FlowNode[], edges: FlowEdge[]): ValidationReport
   const reach = getReachability(startId, nodes, edges);
   nodes.filter(n => startId && !reach[n.id]).forEach(n => push("warning", `Nodo "${n.data.label}" inalcanzable.`, n.id));
 
-  // 2.1 Restricción de Nodo PARALLEL (Debe ser antepenúltimo)
+  // 2.1 Restricción de Nodo PARALLEL (Modelo Fork/Join)
   const parallelNodes = nodes.filter(n => n.type === "parallel");
   parallelNodes.forEach(pNode => {
     const outEdges = edges.filter(e => e.source === pNode.id);
     if (outEdges.length === 0) {
       push("error", `PARALLEL "${pNode.data.label || pNode.id}" no tiene ramas de salida.`, pNode.id);
-    } else {
-      outEdges.forEach(edge => {
-        const branchTargetNode = nodes.find(n => n.id === edge.target);
-        if (!branchTargetNode) return;
+    }
+    // Ejecutamos un BFS en cada rama que sale del nodo PARALLEL
+    // El objetivo es asegurar que la ramificación no conduzca a la nada o al END directamente
+    // Debe cruzarse obligatoriamente con un PARALLEL_JOIN.
+    const queue = [...outEdges.map(e => e.target)];
+    const visited = new Set<string>();
 
-        // El nodo destino no puede ser un END directamente ni puede ser otro PARALLEL. (PARALLEL -> NODO_X -> END)
-        if (branchTargetNode.type === "end" || branchTargetNode.type === "parallel") {
-          push("error", `La rama de PARALLEL "${pNode.data.label || pNode.id}" no puede conectar directamente a un END o PARALLEL. Debe haber una tarea intermedia.`, pNode.id);
-          return;
-        }
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
 
-        // Revisar qué sale de ese branchTargetNode
-        const targetOutEdges = edges.filter(e => e.source === branchTargetNode.id);
-        if (targetOutEdges.length !== 1) {
-          push("error", `El nodo "${branchTargetNode.data.label || branchTargetNode.id}" en una rama paralela debe apuntar a exactamente 1 nodo END.`, branchTargetNode.id);
-        } else {
-          const finalNode = nodes.find(n => n.id === targetOutEdges[0].target);
-          if (finalNode?.type !== "end") {
-            push("error", `El nodo "${branchTargetNode.data.label || branchTargetNode.id}" en una rama paralela DEBE apuntar a un nodo END para cumplir la regla de ser el antepenúltimo.`, branchTargetNode.id);
-          }
-        }
-      });
+      const currentNode = nodes.find(n => n.id === currentId);
+      if (!currentNode) continue;
+
+      if (currentNode.type === "parallel_join") {
+        // Encontramos la barrera de sincronización sana y salva para esta rama. Fin de exploración.
+        continue;
+      }
+
+      const nextEdges = edges.filter(e => e.source === currentId);
+      if (nextEdges.length === 0) {
+        // Llegamos a un callejón sin salida (Ej. un nodo END u otro nodo suelto) que NO es Join.
+        push("error", `Una de las ramas originadas en el nodo PARALLEL "${pNode.data.label || pNode.id}" finaliza prematuramente en "${currentNode.data.label || currentNode.id}" sin pasar por una Barrera Join.`, pNode.id);
+        break;
+      }
+
+      nextEdges.forEach(e => queue.push(e.target));
+    }
+  });
+
+  const joinNodes = nodes.filter(n => n.type === "parallel_join");
+  joinNodes.forEach(jNode => {
+    const inEdges = edges.filter(e => e.target === jNode.id);
+    if (inEdges.length < 2) {
+      push("warning", `Barrera "${jNode.data.label || jNode.id}" debería recibir 2 o más conexiones entrantes para ser un Join real.`, jNode.id);
+    }
+    const outEdges = edges.filter(e => e.source === jNode.id);
+    if (outEdges.length === 0) {
+      push("warning", `Barrera "${jNode.data.label || jNode.id}" bloquea el flujo si no tiene una salida conectada.`, jNode.id);
     }
   });
 

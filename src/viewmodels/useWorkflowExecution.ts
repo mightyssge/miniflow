@@ -8,7 +8,9 @@ export function useWorkflowExecution() {
 
   const run = async (workflow: any) => {
     setRunStatus("running");
+    setRunResult(null);
     const startTime = Date.now();
+
     try {
       const res = await window.electronAPI.runWorkflow(JSON.stringify(workflow));
       const duration = Date.now() - startTime;
