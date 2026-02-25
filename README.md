@@ -1,167 +1,333 @@
 # 🚀 MiniFlow Builder
 
-MiniFlow es un editor visual de flujos de trabajo (workflows) construido con **ReactFlow**. El proyecto utiliza una arquitectura **MVVM (Model-View-ViewModel)** y **CSS Modules** para garantizar un código modular, escalable y profesional.
+MiniFlow es un editor visual de flujos de trabajo (workflows) construido con **ReactFlow** y ejecutado como app de escritorio con **Electron**. El motor de ejecución está implementado en **Java** y se comunica con la interfaz mediante STDIN/STDOUT.
 
 ---
 
-## 🏗️ Arquitectura del Proyecto
+## 📋 Índice
 
-El proyecto se divide en tres capas principales para separar la lógica de negocio de la interfaz de usuario.
-
-
-
-### 📂 Estructura de Directorios
-
-#### 1. Models (`src/models/`)
-Es la capa de datos y lógica pura. No depende de React ni de la interfaz.
-* **`workflow/`**: Contiene la "inteligencia" del sistema.
-    * `types.ts`: Definiciones de TypeScript para nodos, configuración y esquemas de datos.
-    * `WorkflowValidator.ts`: Lógica para validar que el flujo sea correcto (ej. evitar ciclos, verificar conexiones obligatorias).
-    * `WorkflowFactory.ts`: Utilidades para instanciar nuevos nodos y estructuras de datos.
-    * `WorkflowExporters.ts`: Lógica para transformar el workflow a formatos como `.json` o código `.java`.
-* **`storage/`**:
-    * `LocalStorage.ts`: Abstracción para el guardado persistente en el navegador.
-
-#### 2. ViewModels (`src/viewmodels/`)
-Es el puente entre los modelos y la vista. Maneja el estado y las interacciones.
-* `useWorkflowViewModel.ts`: El ViewModel principal que coordina ReactFlow con la lógica de negocio.
-* `useWorkflowStorage.ts`: Encargado de sincronizar el estado del editor con el almacenamiento persistente.
-* `useWorkflowIO.ts`: Gestiona la entrada y salida de archivos (import/export).
-
-#### 3. Views (`src/views/`)
-La capa de presentación. Se encarga únicamente de renderizar la interfaz.
-* **`components/`**: Widgets y paneles de la aplicación como `Sidebar` y `NodeConfigPanel`.
-* **`nodes/`**: Contiene los componentes de los nodos personalizados (`StartNode`, `CommandNode`).
-    * `nodeTypes.ts`: Configuración que vincula los tipos de nodos con sus respectivos componentes.
+- [Descripción General](#-descripción-general)
+- [Stack Tecnológico](#-stack-tecnológico)
+- [Arquitectura del Proyecto (MVVM)](#-arquitectura-del-proyecto-mvvm)
+- [Estructura de Directorios](#-estructura-de-directorios)
+- [Tipos de Nodos](#-tipos-de-nodos)
+- [Setup y Ejecución](#-setup-y-ejecución)
+- [Motor Java (Engine)](#-motor-java-engine)
+- [Scripts Disponibles](#-scripts-disponibles)
+- [Sistema de Estilos](#-sistema-de-estilos)
+- [Decisiones de Arquitectura](#-decisiones-de-arquitectura)
 
 ---
 
-## 🎨 Sistema de Estilos: CSS Modules
+## 📌 Descripción General
 
-Para evitar colisiones de nombres y mantener el código limpio, utilizamos **CSS Modules**.
-
-
-
-### Principios de Estilizado:
-1.  **Co-location**: Cada componente (`.tsx`) tiene su propio archivo de estilos (`.module.css`) en la misma carpeta.
-2.  **Encapsulamiento**: Las clases son locales al componente. Una clase `.btn` en el Sidebar no afectará a los botones de la Topbar.
-3.  **Globalidad Mínima**: 
-    * `src/index.css`: Solo contiene resets de CSS y sobrescrituras de las clases internas de ReactFlow (ej. `.react-flow__handle`).
-    * `src/App.module.css`: Define el layout principal (Grid de 3 columnas).
+MiniFlow permite al usuario:
+- Diseñar visualmente flujos de automatización arrastrando nodos al canvas.
+- Configurar cada nodo con parámetros específicos (URL, comandos, condiciones, etc.).
+- Validar la coherencia del flujo antes de ejecutarlo.
+- Ejecutar el flujo en tiempo real a través del motor Java integrado.
+- Ver el resultado de cada paso en una línea de tiempo interactiva.
+- Guardar, importar y exportar workflows en formato JSON portable.
 
 ---
 
-## 🛠️ Tecnologías Principales
+## 🛠 Stack Tecnológico
 
-* **React + Vite**: Desarrollo rápido y construcción eficiente.
-* **ReactFlow**: Motor potente para la visualización de nodos y grafos.
-* **TypeScript**: Tipado estricto para reducir errores en el manejo de flujos.
-* **Electron**: Configuración disponible (`electron.d.ts`) para distribución de escritorio.
+| Capa | Tecnología | Uso |
+|------|-----------|-----|
+| UI Framework | React 19 + TypeScript | Interfaz visual |
+| Build Tool | Vite | Dev server y bundling |
+| Editor de Grafos | ReactFlow 11 | Canvas de nodos y aristas |
+| Desktop | Electron 40 | Empaquetado como app nativa |
+| Motor de Ejecución | Java 17 + Maven | Ejecución real del workflow |
+| Routing | React Router DOM 7 | Navegación entre páginas |
+| Iconos | Lucide React | Iconografía consistente |
+| Efectos | canvas-confetti | Feedback visual al completar |
+| Linting | ESLint + typescript-eslint | Calidad de código |
 
+---
 
-## ☕ Guía de Desarrollo del Motor Java (Engine)
+## 🏗 Arquitectura del Proyecto (MVVM)
 
-Si quieres contribuir a la lógica central de MiniFlow, trabajarás en el módulo `java-engine`. Dado que el motor se comunica con la app de escritorio (Electron) mediante la entrada/salida estándar (STDIN/STDOUT), el flujo de trabajo es un poco distinto al de una aplicación Java tradicional.
+El proyecto sigue el patrón **Model-View-ViewModel** para separar la lógica de negocio de la presentación.
 
-### 1. Requisitos Previos
-Antes de empezar, asegúrate de tener instalado:
-
-* **Java Development Kit (JDK) 17+**
-* **Apache Maven**: El motor depende de Maven para gestionar dependencias y generar el "Fat JAR".
-    * [Descarga Maven aquí](https://maven.apache.org/download.cgi)
-
-### 2. Configuración del PATH (Windows)
-Para ejecutar los comandos de construcción desde la raíz del proyecto, `mvn` debe ser accesible globalmente:
-1.  Extrae el zip de Maven en `C:\maven`.
-2.  Busca **Variables de Entorno** en Windows.
-3.  En **Variables del Sistema**, busca `Path` y haz clic en **Editar**.
-4.  Añade `C:\maven\bin` a la lista.
-5.  Reinicia tu terminal y verifica con el comando `mvn -version`.
-
-### 3. Flujo de Trabajo (Workflow)
-La aplicación de Electron no ejecuta los archivos `.java` directamente; ejecuta un archivo `.jar` compilado. Por lo tanto, cada vez que hagas un cambio en el código Java, debes recompilar el motor para que Electron pueda "ver" las actualizaciones.
-
-**El ciclo de prueba:**
-1.  **Modifica** el código fuente en `java-engine/src/main/java`.
-2.  **Recompilar y Sincronizar**: Ejecuta el script de construcción desde la carpeta **raíz** del proyecto:
-    * **Windows**: `npm run build:engine`
-    * **Mac/Linux**: `npm run build:engine-mac`
-    * *Este script limpia el proyecto, empaqueta el nuevo JAR y lo mueve automáticamente a `dist-java-engine/engine.jar`.*
-3.  **Lanza la App**: Ejecuta `npm run dev:electron` para iniciar la interfaz de escritorio.
-4.  **Ejecuta**: Crea o carga un flujo en la UI y presiona el botón de ejecución para probar tu nueva lógica en Java.
-
-> **Nota Importante:** El motor utiliza Jackson para el procesamiento de JSON. Si añades nuevas dependencias al `pom.xml`, asegúrate de que estén configuradas en el "shaded JAR" para evitar errores de tipo `ClassNotFoundException` en tiempo de ejecución.
-
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+┌─────────────┐     expone estado      ┌──────────────────┐     llama funciones    ┌───────────────┐
+│   Models    │ ──────────────────────▶│   ViewModels     │ ──────────────────────▶│    Views      │
+│  (lógica)   │ ◀──────────────────────│  (hooks React)   │ ◀──────────────────────│  (componentes)│
+└─────────────┘     persiste datos     └──────────────────┘      notifica cambios  └───────────────┘
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Capa Model (`src/models/`)
+Lógica pura de negocio. **No depende de React** ni de la interfaz.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `workflow/types.ts` — Tipos TypeScript para nodos, edges, configs y validaciones.
+- `workflow/WorkflowFactory.ts` — Fábrica para crear nodos y workflows vacíos.
+- `workflow/WorkflowValidator.ts` — Validación de topología (ciclos, nodos inalcanzables, configuraciones incompletas).
+- `workflow/WorkflowSerializer.ts` — Convierte el estado interno de React en JSON portable.
+- `workflow/WorkflowDeserializer.ts` — Reconstruye el estado interno desde un JSON importado.
+- `workflow/WorkflowExporters.ts` — Descarga el workflow como `.json` o `.java`.
+- `workflow/WorkflowRunner.ts` — Parsea la salida del motor Java en pasos de ejecución.
+- `workflow/defaults.ts` — Configuraciones por defecto para cada tipo de nodo.
+- `workflow/validation/` — Utilidades de grafo (BFS/DFS, ciclos) y reglas por nodo.
+- `storage/LocalStorage.ts` — Persistencia en `localStorage` del navegador (workflows y runs).
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Capa ViewModel (`src/viewmodels/`)
+Puente entre modelos y vista. Maneja el estado con hooks de React.
+
+- `useWorkflowViewModel.ts` — ViewModel principal: nodos, edges, selección, validación.
+- `useWorkflowStorage.ts` — Sincroniza el estado con `LocalStorage`.
+- `useWorkflowIO.ts` — Import/export de archivos y clipboard.
+- `useWorkflowExecution.ts` — Orquesta la comunicación con el motor Java via Electron IPC.
+- `useWorkflowEditorController.ts` — Coordina UI state (modales abiertos, tabs) y delega a los demás viewmodels.
+- `useCanvasDnD.ts` — Drag & drop desde la paleta al canvas.
+
+### Capa View (`src/views/`)
+Presentación pura. Solo renderiza, no contiene lógica de negocio.
+
+- `pages/Landing.tsx` — Pantalla de bienvenida.
+- `pages/Dashboard.tsx` — Listado de workflows guardados.
+- `pages/WorkflowEditor.tsx` — Editor principal con canvas, sidebar y topbar.
+- `components/Sidebar.tsx` — Panel lateral con paleta de nodos y resumen.
+- `components/editor/WorkflowHeader.tsx` — Barra superior con acciones (guardar, validar, ejecutar, historial, herramientas).
+- `components/editor/EngineStatusPill.tsx` — Indicador de estado del motor con timeline de pasos.
+- `components/nodes/` — Componentes visuales de cada tipo de nodo.
+- `components/NodeConfigModal.tsx` — Modal de configuración del nodo seleccionado.
+- `components/ValidationPanel.tsx` — Panel de resultados de validación con navegación a nodos.
+- `components/modals/` — Modales de creación, edición, importación, eliminación e historial.
+
+---
+
+## 📂 Estructura de Directorios
+
 ```
+miniflow/
+├── electron/                          # Proceso principal de Electron (IPC, child_process)
+├── java-engine/
+│   └── src/
+│       ├── main/java/com/miniflow/
+│       │   ├── Main.java              # Punto de entrada del motor
+│       │   ├── context/               # ExecutionContext
+│       │   ├── core/                  # NodeResolver, WorkflowRunner
+│       │   ├── factory/               # ExecutorFactory
+│       │   ├── model/                 # Connection, Node, Workflow
+│       │   ├── strategies/            # Un NodeExecutor por tipo de nodo (Strategy Pattern)
+│       │   └── utils/                 # ExpressionEvaluator, HttpHelper, JsonUtils, etc.
+│       └── test/                      # Tests unitarios e integración
+├── public/
+├── src/
+│   ├── App.tsx                        # Raíz de la app con RouterProvider
+│   ├── electron.d.ts                  # Tipos de window.electronAPI
+│   ├── index.css                      # Resets globales + sobrescrituras ReactFlow
+│   ├── contexts/                      # ToastContext
+│   ├── hooks/                         # useClickOutside, useNodeConfig, useSidebar, useTimerAnimation
+│   ├── models/
+│   │   ├── storage/
+│   │   │   └── LocalStorage.ts        # CRUD workflows + runs + versiones
+│   │   └── workflow/
+│   │       ├── types.ts               # FlowNode, FlowEdge, Workflow (tipos principales)
+│   │       ├── coreTypes.ts           # SystemWorkflow, ExecutionStep, WorkflowExecutionResult
+│   │       ├── WorkflowValidator.ts   # Validación de topología del grafo
+│   │       ├── WorkflowFactory.ts     # Fábrica de nodos y workflows vacíos
+│   │       ├── WorkflowSerializer.ts  # Estado interno → JSON portable
+│   │       ├── WorkflowDeserializer.ts# JSON importado → estado interno
+│   │       ├── WorkflowExporters.ts   # Descarga como .json o .java
+│   │       ├── WorkflowRunner.ts      # Parsea logs del motor Java
+│   │       ├── defaults.ts            # Config por defecto de cada nodo
+│   │       └── validation/            # GraphUtils (BFS/ciclos), NodeRules
+│   ├── viewmodels/
+│   │   ├── useWorkflowViewModel.ts    # ViewModel principal: nodos, edges, selección
+│   │   ├── useWorkflowStorage.ts      # Sincroniza estado con LocalStorage
+│   │   ├── useWorkflowExecution.ts    # Comunicación con el motor Java vía IPC
+│   │   ├── useWorkflowIO.ts           # Import/export de archivos y clipboard
+│   │   ├── useWorkflowEditorController.ts # Coordina UI state (modales, tabs)
+│   │   └── useCanvasDnD.ts            # Drag & drop de nodos al canvas
+│   └── views/
+│       ├── components/
+│       │   ├── FlowCanvas.tsx         # Canvas ReactFlow principal
+│       │   ├── Sidebar.tsx            # Panel lateral con paleta de nodos
+│       │   ├── NodeConfigModal.tsx    # Modal de configuración del nodo
+│       │   ├── ValidationPanel.tsx    # Panel de errores de validación
+│       │   ├── NodeConfigForms/       # Formulario de config por cada tipo de nodo
+│       │   ├── NodeConfigParts/       # Partes reutilizables del modal (Header, Body, Footer, Viewers)
+│       │   ├── ValidationPanelParts/  # ValidationIssueRow, ValidationUtils
+│       │   ├── common/                # KebabMenu
+│       │   ├── editor/                # WorkflowHeader, EngineStatusPill, EngineStatusViews
+│       │   ├── modals/                # CreateModal, DeleteModal, EditModal, ImportWorkflowModal,
+│       │   │                          # RunHistoryModal, WorkflowVersionsModal
+│       │   └── nodes/                 # Componente visual + CSS Module por cada tipo de nodo
+│       └── pages/
+│           ├── Landing.tsx
+│           ├── Dashboard.tsx          # Lista de workflows guardados
+│           └── WorkflowEditor.tsx     # Editor principal (canvas + sidebar + topbar)
+├── workflows_a_probar/                # JSONs de ejemplo para pruebas
+├── package.json
+├── vite.config.ts
+└── tsconfig*.json                     # tsconfig.app, tsconfig.electron, tsconfig.node
+```
+
+---
+
+## 🧩 Tipos de Nodos
+
+| Tipo | Color | Descripción |
+|------|-------|-------------|
+| `start` | Verde `#28b478` | Nodo de inicio del flujo. Exactamente uno por workflow. |
+| `end` | Rojo `#d23750` | Nodo de fin. Exactamente uno por workflow. |
+| `http_request` | Azul `#78b4ff` | Realiza peticiones HTTP (GET/POST/PUT/DELETE) con headers, body y mapeo de respuesta. |
+| `command` | Violeta `#a78bfa` | Ejecuta comandos del sistema operativo o scripts con captura de output. |
+| `conditional` | Naranja `#f5a623` | Bifurca el flujo según una condición booleana. Salidas: `true` / `false`. |
+| `timer` | Azul claro `#60a5fa` | Introduce un retraso configurable en ms, segundos o minutos. |
+| `parallel` | Azul pálido `#a5ceff` | Bifurca el flujo en múltiples ramas paralelas (Fork). |
+| `parallel_join` | Violeta `#a78bfa` | Espera a que todas las ramas paralelas terminen (Join/Barrier). |
+
+### Reglas de validación
+
+- El workflow debe tener **exactamente 1 nodo START y 1 nodo END**.
+- **No se permiten ciclos** en el grafo.
+- Todo nodo debe ser **alcanzable desde START**.
+- Todo nodo `parallel` debe conectarse a un `parallel_join` en todas sus ramas.
+- Los nodos `http_request` y `command` requieren campos obligatorios configurados.
+
+---
+
+## ⚙️ Setup y Ejecución
+
+### Requisitos previos
+
+- **Node.js 18+**
+- **Java Development Kit (JDK) 17+**
+- **Apache Maven** (para compilar el motor Java)
+
+### Instalación
+
+```bash
+git clone <repo-url>
+cd miniflow
+npm install
+```
+
+### Ejecutar en modo web (sin Electron)
+
+```bash
+npm run dev
+# Abre http://localhost:5173
+```
+
+> **Nota:** En modo web, el botón "Ejecutar" no funcionará porque requiere Electron para comunicarse con el motor Java.
+
+### Ejecutar como app de escritorio (Electron)
+
+1. Compilar el motor Java primero (ver sección Motor Java).
+2. Iniciar la app:
+
+```bash
+npm run dev:electron
+```
+
+Esto lanza el dev server de Vite y Electron en paralelo con hot-reload.
+
+---
+
+## ☕ Motor Java (Engine)
+
+El motor está en `java-engine/`. Se compila a un Fat JAR que Electron invoca como proceso hijo, comunicándose mediante STDIN/STDOUT en formato JSON.
+
+### Compilar el motor
+
+```bash
+# Windows
+npm run build:engine
+
+# macOS / Linux
+npm run build:engine-mac
+```
+
+Esto limpia, compila y mueve el JAR a `dist-java-engine/engine.jar`.
+
+### Ciclo de desarrollo del motor
+
+1. Modificar código en `java-engine/src/main/java/`
+2. Compilar: `npm run build:engine` (o `build:engine-mac`)
+3. Lanzar: `npm run dev:electron`
+4. Probar desde la UI presionando "Ejecutar"
+
+> **Importante:** El motor usa Jackson para JSON. Si añades dependencias al `pom.xml`, asegúrate de incluirlas en el Fat JAR con el plugin `maven-shade-plugin` para evitar `ClassNotFoundException` en runtime.
+
+### Comunicación Electron ↔ Java
+
+El proceso Electron lanza el JAR con `child_process.spawn`, envía el JSON del workflow por STDIN, y lee la respuesta por STDOUT. El frontend accede a esta funcionalidad a través de `window.electronAPI.runWorkflow(jsonString)` (definido en `src/electron.d.ts`).
+
+---
+
+## 📦 Scripts Disponibles
+
+| Script | Comando | Descripción |
+|--------|---------|-------------|
+| Dev web | `npm run dev` | Inicia Vite en modo desarrollo |
+| Dev desktop | `npm run dev:electron` | Vite + Electron con hot-reload |
+| Build web | `npm run build` | Compilación de producción |
+| Build Electron | `npm run build:electron` | Compila solo el proceso Electron |
+| Build engine (Win) | `npm run build:engine` | Compila el motor Java (Windows) |
+| Build engine (Mac/Linux) | `npm run build:engine-mac` | Compila el motor Java (Unix) |
+| Lint | `npm run lint` | ESLint sobre todo el proyecto |
+| Preview | `npm run preview` | Preview del build de producción |
+
+---
+
+## 🎨 Sistema de Estilos
+
+El proyecto usa **CSS Modules** para encapsulamiento y evitar colisiones de clases.
+
+### Principios
+
+- **Co-location:** Cada componente `.tsx` tiene su `.module.css` en la misma carpeta.
+- **Encapsulamiento:** Las clases son locales al componente. Un `.btn` en Sidebar no afecta al de WorkflowHeader.
+- **Globalidad mínima:** Solo `src/index.css` contiene resets y sobrescrituras de ReactFlow (`.react-flow__handle`).
+- **Variables de color:** Los colores se definen como constantes en `nodeConstants.ts` y se pasan como props para mantener consistencia entre el nodo visual y sus formularios.
+
+### Paleta principal
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| Brand blue | `#78b4ff` | Acento principal, nodos HTTP |
+| Success green | `#28b478` | Nodo START, estado válido |
+| Danger red | `#d23750` | Nodo END, errores |
+| Warning orange | `#f5a623` | Nodo CONDITIONAL, advertencias |
+| Purple | `#a78bfa` | Nodo COMMAND, PARALLEL_JOIN |
+| Background dark | `#0b1020` | Fondo principal |
+| Canvas dark | `#070b14` | Fondo del canvas |
+
+---
+
+## 🧠 Decisiones de Arquitectura
+
+### ¿Por qué MVVM con hooks?
+
+Los hooks de React (como `useWorkflowViewModel`) actúan como ViewModels: exponen estado derivado y funciones de acción, sin saber nada de cómo se renderiza. Esto facilita el testing de la lógica de negocio de forma independiente a la UI.
+
+### ¿Por qué Discriminated Union en `FlowNode`?
+
+```typescript
+export type FlowNode =
+  | Node<{ label: string; config: CommandConfig }, 'command'>
+  | Node<{ label: string; config: HttpRequestConfig }, 'http_request'>
+  // ...
+```
+
+TypeScript puede hacer *type narrowing* automático al chequear `node.type`. Esto elimina la necesidad de usar `any` o castear, y permite que el compilador detecte configuraciones incompletas en tiempo de compilación.
+
+### ¿Por qué separar Serializer y Deserializer?
+
+- **Serializer:** Transforma el estado interno de ReactFlow (con posiciones, metadata de UI) en un JSON limpio y portable para guardar o compartir.
+- **Deserializer:** Reconstruye el estado interno con IDs frescos y fallbacks seguros al importar un JSON externo.
+
+Esta separación permite cambiar el formato de serialización sin afectar la lógica del editor.
+
+### ¿Por qué Fat JAR?
+
+El motor Java se empaqueta con todas sus dependencias en un único `.jar` para que Electron pueda lanzarlo sin necesitar Maven ni ningún otro runtime instalado en la máquina del usuario final.
+
+### ¿Por qué LocalStorage para persistencia?
+
+Para un MVP de escritorio con Electron, `localStorage` es suficiente: no requiere una base de datos ni un servidor, los datos persisten entre sesiones, y se puede migrar a SQLite o un archivo `.json` en el sistema de archivos nativo si el proyecto escala.
