@@ -33,15 +33,15 @@ const ParallelNode = ({ id, data, selected }: any) => {
 
             <Handle
                 type="target"
-                position={Position.Top}
-                className={styles.handleTop}
+                position={Position.Left}
+                className={styles.handleLeft}
                 isConnectable={true}
             />
-            {/* El nodo PARALLEL permite múltiples aristas de salida hacia abajo */}
+            {/* El nodo PARALLEL permite múltiples aristas de salida */}
             <Handle
                 type="source"
-                position={Position.Bottom}
-                className={styles.handleBottom}
+                position={Position.Right}
+                className={styles.handleRight}
                 isConnectable={true}
             />
         </div>

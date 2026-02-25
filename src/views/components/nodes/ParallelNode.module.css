@@ -91,8 +91,8 @@
 }
 
 /* Base Handle styles */
-.handleTop,
-.handleBottom {
+.handleLeft,
+.handleRight {
     width: 10px;
     height: 10px;
     background: #1e293b;
@@ -100,23 +100,23 @@
     transition: all 0.2s ease;
 }
 
-.handleTop {
-    top: -20px;
+.handleLeft {
+    left: -20px;
 }
 
-.handleBottom {
-    bottom: -20px;
+.handleRight {
+    right: -20px;
 }
 
-.parallelNode:hover~.handleTop,
-.parallelNode:hover~.handleBottom {
+.parallelNode:hover~.handleLeft,
+.parallelNode:hover~.handleRight {
     border-color: #94a3b8;
     background: #334155;
     transform: scale(1.2);
 }
 
-.selected~.handleTop,
-.selected~.handleBottom {
+.selected~.handleLeft,
+.selected~.handleRight {
     border-color: #3b82f6;
     background: #eff6ff;
 }
