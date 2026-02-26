@@ -1,0 +1,29 @@
+REPORTE DE ALUMNOS DE SISTEMAS
+==============================
+NOMBRE               | NOTA 
+------------------------------
+Luis Gomez           | 10   
+Luis Gomez           | 15   
+Jose Sanchez         | 16   
+Juan Ruiz            | 16   
+Jose Perez           | 17   
+Sofia Perez          | 13   
+Ana Garcia           | 18   
+Luis Lopez           | 18   
+Luis Torres          | 18   
+Ana Sanchez          | 12   
+Maria Diaz           | 14   
+Jose Lopez           | 10   
+Jose Ruiz            | 11   
+Carlos Garcia        | 18   
+Elena Diaz           | 13   
+Jose Diaz            | 19   
+Sofia Ruiz           | 19   
+Diego Diaz           | 10   
+Juan Diaz            | 17   
+Juan Ruiz            | 20   
+Sofia Gomez          | 11   
+Sofia Perez          | 14   
+Sofia Sanchez        | 20   
+------------------------------
+Total de alumnos procesados: 23
