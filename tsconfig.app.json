@@ -30,6 +30,6 @@
   },
   "include": [
     "src",
-    "workflows_a_probar/**/*.json"
+    "tests/manual_test_workflows/**/*.json"
   ]
 }

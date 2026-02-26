@@ -6,10 +6,10 @@ import { NODE_PALETTE } from "./nodeConstants";
 import { SectionHeader, NodePaletteCard } from "./SidebarParts";
 import { useSidebar } from "../../hooks/useSidebar";
 
-import wf1_1 from "../../../workflows_a_probar/workflow_1.1.json";
-import wf1_2 from "../../../workflows_a_probar/workflow_1.2.json";
-import wf2 from "../../../workflows_a_probar/workflow_2.json";
-import wf3 from "../../../workflows_a_probar/workflow_3.json";
+import wf1_1 from "../../../tests/manual_test_workflows/workflow_1.1.json";
+import wf1_2 from "../../../tests/manual_test_workflows/workflow_1.2.json";
+import wf2 from "../../../tests/manual_test_workflows/workflow_2.json";
+import wf3 from "../../../tests/manual_test_workflows/workflow_3.json";
 
 export function Sidebar({ state, handlers }: any) {
   const navigate = useNavigate();

@@ -1,0 +1,106 @@
+{
+    "name": "Workflow 1: Consumo de API",
+    "nodes": [
+        {
+            "id": "start-1",
+            "type": "start",
+            "position": {
+                "x": 350,
+                "y": 50
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "http-1",
+            "type": "http_request",
+            "position": {
+                "x": 350,
+                "y": 150
+            },
+            "data": {
+                "label": "Consultar API",
+                "config": {
+                    "method": "GET",
+                    "url": "https://api.example.com/data",
+                    "timeoutMs": 5000,
+                    "retries": 3,
+                    "errorPolicy": "CONTINUE_ON_FAIL",
+                    "map": {
+                        "status": "$.status",
+                        "payload": "$.data"
+                    }
+                }
+            }
+        },
+        {
+            "id": "cond-1",
+            "type": "conditional",
+            "position": {
+                "x": 350,
+                "y": 250
+            },
+            "data": {
+                "label": "Evaluar respuesta",
+                "config": {
+                    "condition": "context.status == 200"
+                }
+            }
+        },
+        {
+            "id": "cmd-true",
+            "type": "command",
+            "position": {
+                "x": 150,
+                "y": 350
+            },
+            "data": {
+                "label": "Procesar datos (TRUE)",
+                "config": {
+                    "command": "python",
+                    "args": "../workflows_a_probar/wf1/process.py"
+                }
+            }
+        },
+        {
+            "id": "cmd-false",
+            "type": "command",
+            "position": {
+                "x": 550,
+                "y": 350
+            },
+            "data": {
+                "label": "Registrar error (FALSE)",
+                "config": {
+                    "command": "echo",
+                    "args": "Error al consumir API"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start-1",
+            "target": "http-1"
+        },
+        {
+            "id": "e2",
+            "source": "http-1",
+            "target": "cond-1"
+        },
+        {
+            "id": "e3",
+            "source": "cond-1",
+            "target": "cmd-true",
+            "sourceHandle": "true"
+        },
+        {
+            "id": "e4",
+            "source": "cond-1",
+            "target": "cmd-false",
+            "sourceHandle": "false"
+        }
+    ]
+}
