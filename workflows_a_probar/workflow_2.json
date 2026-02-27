@@ -1,0 +1,83 @@
+{
+    "name": "Workflow 2: ETL Local",
+    "nodes": [
+        {
+            "id": "start-1",
+            "type": "start",
+            "position": {
+                "x": 350,
+                "y": 50
+            },
+            "data": {
+                "label": "Start"
+            }
+        },
+        {
+            "id": "cmd-1",
+            "type": "command",
+            "position": {
+                "x": 350,
+                "y": 150
+            },
+            "data": {
+                "label": "Extraer datos",
+                "config": {
+                    "command": "bash",
+                    "args": "workflows_a_probar/wf2/extract.sh",
+                    "outputKey": "rawData"
+                }
+            }
+        },
+        {
+            "id": "cmd-2",
+            "type": "command",
+            "position": {
+                "x": 350,
+                "y": 250
+            },
+            "data": {
+                "label": "Transformar datos",
+                "config": {
+                    "command": "python",
+                    "args": "workflows_a_probar/wf2/transform.py",
+                    "inputKey": "rawData",
+                    "outputKey": "cleanedData"
+                }
+            }
+        },
+        {
+            "id": "cmd-3",
+            "type": "command",
+            "position": {
+                "x": 350,
+                "y": 350
+            },
+            "data": {
+                "label": "Cargar resultados",
+                "config": {
+                    "command": "python",
+                    "args": "load.py",
+                    "inputKey": "cleanedData",
+                    "cwd": "workflows_a_probar/wf2"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "start-1",
+            "target": "cmd-1"
+        },
+        {
+            "id": "e2",
+            "source": "cmd-1",
+            "target": "cmd-2"
+        },
+        {
+            "id": "e3",
+            "source": "cmd-2",
+            "target": "cmd-3"
+        }
+    ]
+}

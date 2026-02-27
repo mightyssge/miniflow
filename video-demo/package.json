@@ -1,0 +1,27 @@
+{
+  "name": "video-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "remotion preview src/index.ts",
+    "build": "remotion render src/index.ts MiniFlowDemo out.mp4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/bundler": "^4.0.429",
+    "@remotion/cli": "^4.0.429",
+    "@remotion/player": "^4.0.429",
+    "@remotion/renderer": "^4.0.429",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "lucide-react": "^0.575.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.429",
+    "typescript": "^5.9.3"
+  }
+}
