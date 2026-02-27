@@ -6,6 +6,9 @@
 [![Tech: Java 17](https://img.shields.io/badge/Engine-Java%2017-orange?logo=openjdk)](https://openjdk.org/)
 [![Tech: Electron](https://img.shields.io/badge/Desktop-Electron%2040-47848F?logo=electron)](https://www.electronjs.org/)
 
+
+
+
 **MiniFlow** is a powerful, low-code visual workflow builder designed for high-performance automation. Built with a decoupled architecture, it leverages a React-based frontend for intuitive graph orchestration and a high-speed Java execution engine for real-time processing.
 
 ---
@@ -61,11 +64,10 @@ MiniFlow integrates **Remotion** capabilities to transform workflow executions i
 *   **Visual Documentation:** Generate high-fidelity videos of your automation runs for compliance and documentation.
 *   **Dynamic Playback:** Every node transition and variable change is rendered in code-driven video, allowing for programmatic "instant replays" of production runs.
 
-> **Watch the MiniFlow Cinematic Demo:**
-> 
-> <video src="out.mp4" controls="controls" width="100%">
->   Tu navegador no soporta el tag de video.
-> </video>
+**Watch the MiniFlow Cinematic Demo:**
+ 
+https://github.com/user-attachments/assets/5f09a3da-9834-46de-a9bb-bf89778cd9e6
+
 
 ---
 
