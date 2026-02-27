@@ -61,6 +61,12 @@ MiniFlow integrates **Remotion** capabilities to transform workflow executions i
 *   **Visual Documentation:** Generate high-fidelity videos of your automation runs for compliance and documentation.
 *   **Dynamic Playback:** Every node transition and variable change is rendered in code-driven video, allowing for programmatic "instant replays" of production runs.
 
+> **Watch the MiniFlow Cinematic Demo:**
+> 
+> <video src="out.mp4" controls="controls" width="100%">
+>   Tu navegador no soporta el tag de video.
+> </video>
+
 ---
 
 ## 🛠️ Setup & Execution
