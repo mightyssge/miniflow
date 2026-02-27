@@ -47,7 +47,7 @@ jobs:
 
     - name: Package Windows Executable (.exe)
       # Esto empacará y generará los archivos en la carpeta release/ (incluyendo Installer y Portable)
-      run: npm run package
+      run: npm run package -- --publish never
 
     - name: Publish Windows .exe to GitHub Releases
       # Solo publicar auto-release en caso de un merge/push a main
