@@ -4,9 +4,11 @@ import path from "path";
 
 export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const engineDir = path.join(app.getAppPath(), "dist-java-engine");
+    const engineDir = app.isPackaged
+      ? path.join(process.resourcesPath, "dist-java-engine")
+      : path.join(app.getAppPath(), "dist-java-engine");
 
-    const process = spawn("java", ["-jar", "engine.jar"], {
+    const engineProcess = spawn("java", ["-jar", "engine.jar"], {
       cwd: engineDir
     });
 
@@ -16,10 +18,10 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
     let resolved = false; // Flag para evitar múltiples resoluciones
 
     const payload = typeof workflowJson === "string" ? workflowJson : JSON.stringify(workflowJson);
-    process.stdin.write(payload);
-    process.stdin.end();
+    engineProcess.stdin.write(payload);
+    engineProcess.stdin.end();
 
-    process.stdout.on("data", (data) => {
+    engineProcess.stdout.on("data", (data) => {
       const chunk = data.toString();
       fullStdout += chunk;
       console.log(chunk.trim());
@@ -48,7 +50,7 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
       }
     });
 
-    process.stderr.on("data", (data) => {
+    engineProcess.stderr.on("data", (data) => {
       const chunk = data.toString();
       fullStderr += chunk;
       console.error(`[JAVA-STDERR]: ${chunk.trim()}`);
@@ -58,7 +60,7 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
       }
     });
 
-    process.on("close", (code) => {
+    engineProcess.on("close", (code) => {
       if (!resolved) {
         console.log(`[JAVA]: Proceso finalizado vía close con código ${code}`);
         resolve({
@@ -70,7 +72,7 @@ export function runWorkflow(workflowJson: any): Promise<{ ok: boolean; exitCode:
       }
     });
 
-    process.on("error", (err) => {
+    engineProcess.on("error", (err) => {
       console.error("[JAVA]: Error al iniciar el proceso", err);
       reject(err);
     });

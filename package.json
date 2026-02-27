@@ -12,8 +12,41 @@
     "build:electron": "tsc -p tsconfig.electron.json",
     "build:engine": "powershell -Command \"Remove-Item dist-java-engine -Recurse -Force -ErrorAction SilentlyContinue; cd java-engine; mvn clean package; cd ..; New-Item -ItemType Directory dist-java-engine | Out-Null; Copy-Item java-engine\\target\\java-engine-1.0-SNAPSHOT.jar dist-java-engine\\engine.jar -Force\"",
     "build:engine-linux": "cd java-engine && mvn clean package && cd .. && mkdir -p dist-java-engine && cp java-engine/target/java-engine-1.0-SNAPSHOT.jar dist-java-engine/engine.jar",
+    "package": "npm run build && npm run build:electron && electron-builder --win",
     "lint": "eslint .",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.miniflow.app",
+    "productName": "Miniflow",
+    "directories": {
+      "output": "release/"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist-java-engine",
+        "to": "dist-java-engine",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
@@ -32,6 +65,7 @@
     "@vitejs/plugin-react-swc": "^4.2.2",
     "concurrently": "^9.2.1",
     "electron": "^40.0.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

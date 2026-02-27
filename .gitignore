@@ -26,7 +26,6 @@ dist-ssr
 *.sw?
 .agents
 
-```ignore
 # Environment variables
 .env
 .env.local
@@ -52,7 +51,10 @@ bin/
 
 # System files
 Thumbs.db
-```
-
 java-engine/target
 
+# Build Config + Errors
+release/
+package-error.log
+debug*.log
+debug_clean.txt

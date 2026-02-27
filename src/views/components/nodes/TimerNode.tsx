@@ -14,10 +14,10 @@ interface TimerNodeData {
 
 export default function TimerNode({ id, data, selected }: NodeProps<TimerNodeData>) {
   const { state: { runResult } } = useWorkflowViewModel();
-  
+
   // 1. Extraemos config con valores por defecto
   const { delay = 3, unit = "s" } = data.config || {};
-  
+
   const totalMs = useMemo(() => {
     let ms = delay;
     if (unit === "s") ms *= 1000;
@@ -27,17 +27,17 @@ export default function TimerNode({ id, data, selected }: NodeProps<TimerNodeDat
 
   // 2. Estado de ejecución y animación
   const stepStatus = runResult?.steps?.find((s: any) => s.nodeId === id)?.status || "idle";
-  const isRunning = stepStatus === "running";
-  const isSuccess = stepStatus === "success";
+  const isRunning = (stepStatus as string) === "running" || (stepStatus as string) === "RUNNING";
+  const isSuccess = (stepStatus as string) === "SUCCESS";
 
   // Obtenemos el progreso desde nuestro custom hook
   const { progress, timeLeftStr } = useTimerAnimation(isRunning, isSuccess, totalMs);
 
   return (
-    <RoundNodeWrapper 
-      id={id} 
-      selected={selected} 
-      progress={progress} 
+    <RoundNodeWrapper
+      id={id}
+      selected={selected}
+      progress={progress}
       isSuccess={isSuccess}
     >
       {/* Este es el 'children' que recibe el RoundNodeWrapper */}

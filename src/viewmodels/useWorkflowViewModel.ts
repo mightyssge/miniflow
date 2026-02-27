@@ -82,7 +82,7 @@ export function useWorkflowViewModel(initialId?: string) {
       setValidationReport(report);
       if (report.isValid) {
         persist(getSnapshot() as any);
-        await run(getSnapshot());
+        await run(getSnapshot() as any);
       }
     },
     executeNow: async () => {
@@ -90,7 +90,7 @@ export function useWorkflowViewModel(initialId?: string) {
       setValidationReport(report);
       if (report.isValid) {
         persist(getSnapshot() as any);
-        await run(getSnapshot());
+        await run(getSnapshot() as any);
       }
     }, // Alias
     onNodeClick: (_: any, node: any) => setSelectedNodeId(node.id),
